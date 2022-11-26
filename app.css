@@ -1,0 +1,23 @@
+h1 {
+    background-color: aqua;
+    color: rebeccapurple
+}
+
+.piece {
+    background-color: brown;
+    transition: background-color 1s;
+    height: 4rem;
+    width: 4rem;
+}
+
+.piece:hover {
+    background-color: chartreuse;
+}
+
+.piece-board {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    width: 9rem;
+}
