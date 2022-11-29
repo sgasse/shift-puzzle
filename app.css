@@ -1,5 +1,6 @@
 .field {
-    background-color: rgb(71, 110, 240);
+    /* background-color: rgb(71, 110, 240); */
+    /* background-size: 20px 20px; */
     transition: all 0.5s;
     height: 4rem;
     width: 4rem;

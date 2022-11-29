@@ -1,5 +1,3 @@
-use std::ops::Add;
-
 use yew::prelude::*;
 
 #[derive(Properties, PartialEq)]
@@ -8,6 +6,16 @@ pub struct PuzzleBoardProps {
     pub width: usize,
     pub height: usize,
     pub on_click: Callback<usize>,
+}
+
+struct FieldProps {
+    left_pos: usize,
+    top_pos: usize,
+    img_pos_x: usize,
+    img_pos_y: usize,
+    class: &'static str,
+    name: String,
+    bg_str: &'static str,
 }
 
 #[function_component(PuzzleBoard)]
@@ -27,14 +35,35 @@ pub fn puzzle_board(
                 let on_click = on_click.clone();
                 Callback::from(move |_| on_click.emit(idx))
             };
-            let (left, top) = get_left_top(idx, *width, 4);
-            let (class, name) = match field {
-                u8::MAX => ("empty-field", "".to_owned()),
-                _ => ("field", format!("{}", field)),
+            let cat_bg = "background-size: 12rem 12rem; background-image: url(https://i.pinimg.com/564x/26/19/76/261976d8922d44a08be9f5276800470f.jpg);";
+            let (left_pos, top_pos) = get_left_top(idx, *width, 4);
+            let (left_img, top_img) = get_left_top(field as usize, *width, 4);
+
+            let field_props = match field {
+                u8::MAX => FieldProps {
+                    left_pos,
+                    top_pos,
+                    img_pos_x: 0,
+                    img_pos_y: 0,
+                    class: "empty-field",
+                    name: "".to_owned(),
+                    bg_str: ""
+                },
+                _ => FieldProps {
+                    left_pos,
+                    top_pos,
+                    img_pos_x: 12 - left_img,
+                    img_pos_y: 12 - top_img,
+                    class: "field",
+                    name: format!("{}", field),
+                    bg_str: cat_bg,
+                }
             };
+            let style = format!("left: {}rem; top: {}rem; background-position: {}rem {}rem; {}", field_props.left_pos, field_props.top_pos, field_props.img_pos_x, field_props.img_pos_y, field_props.bg_str);
+
             html! {
-                <div key={field} class={class} style={format!("left: {}rem; top: {}rem;", left, top)} onclick={on_field_click}>
-                    {name}
+                <div key={field} class={field_props.class} style={style} onclick={on_field_click}>
+                    {field_props.name}
                 </div>
             }
         })
