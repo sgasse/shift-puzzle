@@ -1,29 +1,25 @@
-h1 {
-    background-color: aqua;
-    color: rebeccapurple
-}
-
-.piece {
-    background-color: brown;
+.field {
+    background-color: rgb(71, 110, 240);
     transition: all 0.5s;
     height: 4rem;
     width: 4rem;
     position: absolute;
-    /* left: 0;
-    top: 0; */
 }
 
-.piece:hover {
+.empty-field {
+    background-color: rgb(193, 209, 198);
+    transition: all 0.5s;
+    height: 4rem;
+    width: 4rem;
+    position: absolute;
+}
+
+.field:hover {
     background-color: chartreuse;
-    /* left: 1rem; */
 }
 
-.piece-board {
+.board {
     position: relative;
-    /* display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 0.5rem; */
-    width: 9rem;
-    height: 9rem;
+    width: 12rem;
+    height: 12rem;
 }
