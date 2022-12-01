@@ -35,10 +35,18 @@ pub fn puzzle_board(
 ) -> Html {
     let on_click = on_click.clone();
 
+    // Callback to concatenate a size value with the given unit
     let as_unit = |value: usize| format!("{}{}", value, field_unit);
-    let fields_html: Html = fields
+
+    // Enumerate values and sort by fields. This is required so that every
+    // field shows up at the same list index in the DOM regardless of its left/
+    // right value. Otherwise, elements would be recreated and the animation
+    // state lost.
+    let mut indexes_fields: Vec<_> = fields.into_iter().enumerate().collect();
+    indexes_fields.sort_by(|a, b| b.1.cmp(&a.1));
+
+    let fields_html: Html = indexes_fields
         .into_iter()
-        .enumerate()
         .map(|(idx, &field)| {
             let on_field_click = {
                 let on_click = on_click.clone();
