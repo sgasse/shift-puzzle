@@ -35,6 +35,13 @@ pub fn puzzle_board(
 ) -> Html {
     let on_click = on_click.clone();
 
+    log::info!(
+        "Rendering puzzle board with width {}, height {}, fields {:?}",
+        width,
+        height,
+        &fields
+    );
+
     // Callback to concatenate a size value with the given unit
     let as_unit = |value: usize| format!("{}{}", value, field_unit);
 
@@ -189,44 +196,6 @@ where
 {
     let t_zero: T = T::default();
     t_zero <= row && row < height && t_zero <= col && col < width
-}
-
-#[derive(Clone, PartialEq)]
-pub struct Piece {
-    pub id: u8,
-    pub name: String,
-}
-
-#[derive(Properties, PartialEq)]
-pub struct PieceBoardProps {
-    pub fields: Vec<Piece>,
-    pub on_click: Callback<Piece>,
-}
-
-#[function_component(PieceBoard)]
-pub fn field_board(PieceBoardProps { fields, on_click }: &PieceBoardProps) -> Html {
-    let on_click = on_click.clone();
-    let fields_html: Html = fields
-        .iter()
-        .map(|field| {
-            let on_field_click = {
-                let on_click = on_click.clone();
-                let field = field.clone();
-                Callback::from(move |_| on_click.emit(field.clone()))
-            };
-            html! {
-                <div key={field.id} class="field" onclick={on_field_click}>
-                    {field.name.clone()}
-                </div>
-            }
-        })
-        .collect();
-
-    html! {
-        <div class="field-board">
-            { fields_html }
-        </div>
-    }
 }
 
 pub fn initialize_fields(width: usize, height: usize) -> Vec<u8> {

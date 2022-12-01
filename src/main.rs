@@ -15,22 +15,23 @@ fn app() -> Html {
     //     _ => 3,
     // });
 
-    let on_width_change = {
-        let width_txt = width_txt.clone();
-        Callback::from(move |input_event: InputEvent| {
-            if let Some(value) = input_event.data() {
-                info!("Received width value {:?}", value);
-                width_txt.set(value);
-            }
-        })
-    };
-
     let (width, height) = match (width_txt.parse::<usize>(), height_txt.parse::<usize>()) {
         (Ok(width), Ok(height)) => (width, height),
         _ => (3, 3),
     };
-    // let fields = initialize_fields(width, height);
     let fields = use_state(|| initialize_fields(width, height));
+
+    let on_width_change = {
+        let width_txt = width_txt.clone();
+        let fields = fields.clone();
+        Callback::from(move |input_event: InputEvent| {
+            if let Some(value) = input_event.data() {
+                info!("Received width value {:?}", value);
+                info!("Fields {:?}", *fields);
+                width_txt.set(value);
+            }
+        })
+    };
 
     let on_field_click = {
         let fields = fields.clone();
