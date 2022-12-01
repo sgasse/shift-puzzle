@@ -6,18 +6,35 @@ use yew::prelude::*;
 
 #[function_component(App)]
 fn app() -> Html {
-    let width = "4";
-    let height = "3";
-    let (width, height) = match (width.parse::<usize>(), height.parse::<usize>()) {
+    // Width and height states + callbacks
+    let width_txt = use_state(|| "4".to_owned());
+    let height_txt = use_state(|| "3".to_owned());
+
+    // let width_val = use_state(|| match width_txt.parse::<usize>() {
+    //     Ok(width) => width,
+    //     _ => 3,
+    // });
+
+    let on_width_change = {
+        let width_txt = width_txt.clone();
+        Callback::from(move |input_event: InputEvent| {
+            if let Some(value) = input_event.data() {
+                info!("Received width value {:?}", value);
+                width_txt.set(value);
+            }
+        })
+    };
+
+    let (width, height) = match (width_txt.parse::<usize>(), height_txt.parse::<usize>()) {
         (Ok(width), Ok(height)) => (width, height),
         _ => (3, 3),
     };
-    let fields = initialize_fields(width, height);
-    // let fields = [0, 1, 2, 3, 4, 5, 6, 7, u8::MAX];
-    let fields = use_state(|| fields);
+    // let fields = initialize_fields(width, height);
+    let fields = use_state(|| initialize_fields(width, height));
 
     let on_field_click = {
         let fields = fields.clone();
+        // let width_val = width_val.clone();
         Callback::from(move |clicked_idx: usize| {
             info!("Clicked on field with index {}", clicked_idx);
             let updated_fields = trigger_field(&fields, width, height, clicked_idx);
@@ -29,12 +46,12 @@ fn app() -> Html {
         <>
             <h1>{ "Shift Puzzle" }</h1>
             <input type="text" value="bla" />
-            <input type="text" value="3" />
-            <input type="text" value="3" />
+            <input type="text" value={(&*width_txt).clone()} oninput={on_width_change.clone()}/>
+            <input type="text" value={(&*height_txt).clone()} />
             <PuzzleBoard
                 fields={(&*fields).clone()}
                 on_click={on_field_click.clone()}
-                width={width as usize}
+                width={(width) as usize}
                 height={height as usize}
                 field_size={5}
                 field_unit={"rem"}
