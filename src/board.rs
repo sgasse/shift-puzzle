@@ -2,7 +2,7 @@ use yew::prelude::*;
 
 #[derive(Properties, PartialEq)]
 pub struct PuzzleBoardProps {
-    pub fields: [u8; 9],
+    pub fields: Vec<u8>,
     pub width: usize,
     pub height: usize,
     pub field_size: usize,
@@ -154,7 +154,7 @@ where
     row.mul(width).add(col).into()
 }
 
-pub fn trigger_field(fields: &[u8; 9], width: usize, height: usize, clicked_idx: usize) -> [u8; 9] {
+pub fn trigger_field(fields: &Vec<u8>, width: usize, height: usize, clicked_idx: usize) -> Vec<u8> {
     let mut fields = fields.clone();
 
     if let Some(&u8::MAX) = fields.get(clicked_idx) {
@@ -188,7 +188,7 @@ where
     T: Default,
 {
     let t_zero: T = T::default();
-    t_zero <= row && row < width && t_zero <= col && col < height
+    t_zero <= row && row < height && t_zero <= col && col < width
 }
 
 #[derive(Clone, PartialEq)]
@@ -227,4 +227,11 @@ pub fn field_board(PieceBoardProps { fields, on_click }: &PieceBoardProps) -> Ht
             { fields_html }
         </div>
     }
+}
+
+pub fn initialize_fields(width: usize, height: usize) -> Vec<u8> {
+    let num_elements = usize::min(width * height, u8::MAX as usize) as u8;
+    let mut fields: Vec<_> = (0..(num_elements - 1)).into_iter().collect();
+    fields.push(u8::MAX);
+    fields
 }
