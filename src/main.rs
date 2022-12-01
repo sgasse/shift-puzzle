@@ -21,7 +21,15 @@ fn app() -> Html {
     html! {
         <>
             <h1>{ "Shift Puzzle" }</h1>
-            <PuzzleBoard fields={*fields} on_click={on_field_click.clone()} width={3} height={3} />
+            <PuzzleBoard
+                fields={*fields}
+                on_click={on_field_click.clone()}
+                width={3}
+                height={3}
+                field_size={5}
+                field_unit={"rem"}
+                background_url={"https://i.pinimg.com/564x/26/19/76/261976d8922d44a08be9f5276800470f.jpg"}
+            />
         </>
     }
 }
