@@ -69,6 +69,48 @@ fn get_field_click_callback(
     })
 }
 
+#[derive(Properties, PartialEq)]
+struct SettingsBlockProps {
+    pub width_state: UseStateHandle<usize>,
+    pub height_state: UseStateHandle<usize>,
+    pub bg_url_state: UseStateHandle<String>,
+    pub fields: UseStateHandle<Vec<u8>>,
+}
+
+#[function_component(SettingsBlock)]
+fn settings_block(
+    SettingsBlockProps {
+        width_state,
+        height_state,
+        bg_url_state,
+        fields,
+    }: &SettingsBlockProps,
+) -> Html {
+    // Set up callback
+    let (on_width_change, on_height_change) =
+        get_dimension_callbacks(&width_state, &height_state, &fields);
+    let on_bg_url_change = get_bg_callback(&bg_url_state);
+
+    html! {
+        <div class="settings">
+            <div class="">
+                <div class="settings-text">{ "Image URL" }</div>
+                <input type="text" value={(&**bg_url_state).clone()} oninput={on_bg_url_change.clone()} />
+            </div>
+            <div class="dimensions">
+                <div class="dimenions-block">
+                    <div class="settings-text">{ "Width" }</div>
+                    <input type="text" value={format!("{}", **width_state)} oninput={on_width_change.clone()} />
+                </div>
+                <div class="dimenions-block">
+                    <div class="settings-text">{ "Height" }</div>
+                    <input type="text" value={format!("{}", **height_state)} oninput={on_height_change.clone()} />
+                </div>
+            </div>
+        </div>
+    }
+}
+
 #[function_component(App)]
 fn app() -> Html {
     // Set up state
@@ -79,10 +121,7 @@ fn app() -> Html {
     });
     let fields = use_state(|| initialize_fields(*width_state, *height_state));
 
-    // Set up callbacks
-    let (on_width_change, on_height_change) =
-        get_dimension_callbacks(&width_state, &height_state, &fields);
-    let on_bg_url_change = get_bg_callback(&bg_url_state);
+    // Set up callback
     let on_field_click = get_field_click_callback(&width_state, &height_state, &fields);
 
     html! {
@@ -99,24 +138,12 @@ fn app() -> Html {
                 background_url={(&*bg_url_state).clone()}
             />
 
-            <div class="">
-            </div>
-            <div class="settings">
-                <div class="">
-                    <div class="settings-text">{ "Image URL" }</div>
-                    <input type="text" value={(&*bg_url_state).clone()} oninput={on_bg_url_change.clone()} />
-                </div>
-                <div class="dimensions">
-                    <div class="dimenions-block">
-                        <div class="settings-text">{ "Width" }</div>
-                        <input type="text" value={format!("{}", *width_state)} oninput={on_width_change.clone()} />
-                    </div>
-                    <div class="dimenions-block">
-                        <div class="settings-text">{ "Height" }</div>
-                        <input type="text" value={format!("{}", *height_state)} oninput={on_height_change.clone()} />
-                    </div>
-                </div>
-            </div>
+            <SettingsBlock
+                width_state={width_state}
+                height_state={height_state}
+                bg_url_state={bg_url_state}
+                fields={fields}
+            />
         </div>
     }
 }
