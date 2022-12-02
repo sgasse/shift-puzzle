@@ -5,19 +5,10 @@ use board::{initialize_fields, trigger_field, PuzzleBoard};
 use settings::SettingsBlock;
 use yew::prelude::*;
 
-fn get_field_click_callback(
-    width_state: &UseStateHandle<usize>,
-    height_state: &UseStateHandle<usize>,
-    fields: &UseStateHandle<Vec<u8>>,
-) -> Callback<usize> {
-    let width_state = width_state.clone();
-    let height_state = height_state.clone();
-    let fields = fields.clone();
-    Callback::from(move |clicked_idx: usize| {
-        log::info!("Clicked on field with index {}", clicked_idx);
-        let updated_fields = trigger_field(&fields, *width_state, *height_state, clicked_idx);
-        fields.set(updated_fields);
-    })
+fn main() {
+    wasm_logger::init(wasm_logger::Config::default());
+    log::info!("Logger initialized");
+    yew::Renderer::<App>::new().render();
 }
 
 #[function_component(App)]
@@ -57,8 +48,17 @@ fn app() -> Html {
     }
 }
 
-fn main() {
-    wasm_logger::init(wasm_logger::Config::default());
-    log::info!("Logger initialized");
-    yew::Renderer::<App>::new().render();
+fn get_field_click_callback(
+    width_state: &UseStateHandle<usize>,
+    height_state: &UseStateHandle<usize>,
+    fields: &UseStateHandle<Vec<u8>>,
+) -> Callback<usize> {
+    let width_state = width_state.clone();
+    let height_state = height_state.clone();
+    let fields = fields.clone();
+    Callback::from(move |clicked_idx: usize| {
+        log::info!("Clicked on field with index {}", clicked_idx);
+        let updated_fields = trigger_field(&fields, *width_state, *height_state, clicked_idx);
+        fields.set(updated_fields);
+    })
 }

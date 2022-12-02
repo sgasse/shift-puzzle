@@ -11,16 +11,6 @@ pub struct PuzzleBoardProps {
     pub on_click: Callback<usize>,
 }
 
-struct FieldProps {
-    left_pos: usize,
-    top_pos: usize,
-    img_pos_x: usize,
-    img_pos_y: usize,
-    class: &'static str,
-    name: String,
-    bg_str: String,
-}
-
 #[function_component(PuzzleBoard)]
 pub fn puzzle_board(
     PuzzleBoardProps {
@@ -131,6 +121,23 @@ pub fn puzzle_board(
     }
 }
 
+pub fn initialize_fields(width: usize, height: usize) -> Vec<u8> {
+    let num_elements = usize::min(width * height, u8::MAX as usize) as u8;
+    let mut fields: Vec<_> = (0..(num_elements - 1)).into_iter().collect();
+    fields.push(u8::MAX);
+    fields
+}
+
+struct FieldProps {
+    left_pos: usize,
+    top_pos: usize,
+    img_pos_x: usize,
+    img_pos_y: usize,
+    class: &'static str,
+    name: String,
+    bg_str: String,
+}
+
 fn get_left_top(idx: usize, width: usize, unit_size: usize) -> (usize, usize) {
     let (row, col): (usize, usize) = get_row_col_from_idx(idx, width);
     let left = col * unit_size;
@@ -196,11 +203,4 @@ where
 {
     let t_zero: T = T::default();
     t_zero <= row && row < height && t_zero <= col && col < width
-}
-
-pub fn initialize_fields(width: usize, height: usize) -> Vec<u8> {
-    let num_elements = usize::min(width * height, u8::MAX as usize) as u8;
-    let mut fields: Vec<_> = (0..(num_elements - 1)).into_iter().collect();
-    fields.push(u8::MAX);
-    fields
 }
