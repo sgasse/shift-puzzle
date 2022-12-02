@@ -4,16 +4,11 @@ use board::{initialize_fields, trigger_field, PuzzleBoard};
 use log::info;
 use yew::prelude::*;
 
-#[function_component(App)]
-fn app() -> Html {
-    let width_state = use_state(|| 4usize);
-    let height_state = use_state(|| 3usize);
-    let bg_url_state = use_state(|| {
-        "https://scr.wfcdn.de/21565/Imgur-Memes-des-Jahrzehnts-1579171161-0-0.jpg".to_owned()
-    });
-
-    let fields = use_state(|| initialize_fields(*width_state, *height_state));
-
+fn get_dimension_callbacks(
+    width_state: &UseStateHandle<usize>,
+    height_state: &UseStateHandle<usize>,
+    fields: &UseStateHandle<Vec<u8>>,
+) -> (Callback<InputEvent>, Callback<InputEvent>) {
     let on_width_change = {
         let width_state = width_state.clone();
         let height_state = height_state.clone();
@@ -46,33 +41,54 @@ fn app() -> Html {
         })
     };
 
-    let on_bg_url_change = {
-        let bg_url_state = bg_url_state.clone();
-        Callback::from(move |input_event: InputEvent| {
-            if let Some(value) = input_event.data() {
-                log::info!("Updating background URL to {}", &value);
-                bg_url_state.set(value);
-            }
-        })
-    };
+    (on_width_change, on_height_change)
+}
 
-    let on_field_click = {
-        let width_state = width_state.clone();
-        let height_state = height_state.clone();
-        let fields = fields.clone();
-        Callback::from(move |clicked_idx: usize| {
-            info!("Clicked on field with index {}", clicked_idx);
-            let updated_fields = trigger_field(&fields, *width_state, *height_state, clicked_idx);
-            fields.set(updated_fields);
-        })
-    };
+fn get_bg_callback(bg_url_state: &UseStateHandle<String>) -> Callback<InputEvent> {
+    let bg_url_state = bg_url_state.clone();
+    Callback::from(move |input_event: InputEvent| {
+        if let Some(value) = input_event.data() {
+            log::info!("Updating background URL to {}", &value);
+            bg_url_state.set(value);
+        }
+    })
+}
+
+fn get_field_click_callback(
+    width_state: &UseStateHandle<usize>,
+    height_state: &UseStateHandle<usize>,
+    fields: &UseStateHandle<Vec<u8>>,
+) -> Callback<usize> {
+    let width_state = width_state.clone();
+    let height_state = height_state.clone();
+    let fields = fields.clone();
+    Callback::from(move |clicked_idx: usize| {
+        info!("Clicked on field with index {}", clicked_idx);
+        let updated_fields = trigger_field(&fields, *width_state, *height_state, clicked_idx);
+        fields.set(updated_fields);
+    })
+}
+
+#[function_component(App)]
+fn app() -> Html {
+    // Set up state
+    let width_state = use_state(|| 4usize);
+    let height_state = use_state(|| 3usize);
+    let bg_url_state = use_state(|| {
+        "https://scr.wfcdn.de/21565/Imgur-Memes-des-Jahrzehnts-1579171161-0-0.jpg".to_owned()
+    });
+    let fields = use_state(|| initialize_fields(*width_state, *height_state));
+
+    // Set up callbacks
+    let (on_width_change, on_height_change) =
+        get_dimension_callbacks(&width_state, &height_state, &fields);
+    let on_bg_url_change = get_bg_callback(&bg_url_state);
+    let on_field_click = get_field_click_callback(&width_state, &height_state, &fields);
 
     html! {
-        <>
+        <div class="content">
             <h1>{ "Shift Puzzle" }</h1>
-            <input type="text" value={(&*bg_url_state).clone()} oninput={on_bg_url_change.clone()} />
-            <input type="text" value={format!("{}", *width_state)} oninput={on_width_change.clone()} />
-            <input type="text" value={format!("{}", *height_state)} oninput={on_height_change.clone()} />
+            <button>{ "Shuffle" }</button>
             <PuzzleBoard
                 fields={(&*fields).clone()}
                 on_click={on_field_click.clone()}
@@ -82,7 +98,26 @@ fn app() -> Html {
                 field_unit={"rem"}
                 background_url={(&*bg_url_state).clone()}
             />
-        </>
+
+            <div class="">
+            </div>
+            <div class="settings">
+                <div class="">
+                    <div class="settings-text">{ "Image URL" }</div>
+                    <input type="text" value={(&*bg_url_state).clone()} oninput={on_bg_url_change.clone()} />
+                </div>
+                <div class="dimensions">
+                    <div class="dimenions-block">
+                        <div class="settings-text">{ "Width" }</div>
+                        <input type="text" value={format!("{}", *width_state)} oninput={on_width_change.clone()} />
+                    </div>
+                    <div class="dimenions-block">
+                        <div class="settings-text">{ "Height" }</div>
+                        <input type="text" value={format!("{}", *height_state)} oninput={on_height_change.clone()} />
+                    </div>
+                </div>
+            </div>
+        </div>
     }
 }
 
