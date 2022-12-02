@@ -25,16 +25,20 @@ pub fn settings_block(
 
     html! {
         <div class="settings">
-            <div class="">
+            <div class="image-settings">
                 <div class="settings-text">{ "Image URL" }</div>
-                <input type="text" value={(&**bg_url_state).clone()} oninput={on_bg_url_change.clone()} />
+                <input
+                    type="text"
+                    value={(&**bg_url_state).clone()}
+                    oninput={on_bg_url_change.clone()}
+                />
             </div>
             <div class="dimensions">
-                <div class="dimenions-block">
+                <div class="dimensions-block">
                     <div class="settings-text">{ "Width" }</div>
                     <input type="text" value={format!("{}", **width_state)} oninput={on_width_change.clone()} />
                 </div>
-                <div class="dimenions-block">
+                <div class="dimensions-block">
                     <div class="settings-text">{ "Height" }</div>
                     <input type="text" value={format!("{}", **height_state)} oninput={on_height_change.clone()} />
                 </div>
