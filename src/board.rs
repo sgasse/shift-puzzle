@@ -1,3 +1,4 @@
+use rand::seq::SliceRandom;
 use yew::prelude::*;
 
 #[derive(Properties, PartialEq)]
@@ -138,6 +139,101 @@ struct FieldProps {
     bg_str: String,
 }
 
+pub fn trigger_field(fields: &Vec<u8>, width: usize, height: usize, clicked_idx: usize) -> Vec<u8> {
+    let mut fields = fields.clone();
+
+    if let Some(&u8::MAX) = fields.get(clicked_idx) {
+        // Clicked on the empty field - unclear so nothing to do
+        return fields;
+    }
+
+    let (row, col): (usize, usize) = get_row_col_from_idx(clicked_idx, width);
+    for (delta_row, delta_col) in [(-1, 0), (1, 0), (0, -1), (0, 1)] {
+        let neighbour_row = row as isize + delta_row;
+        let neighbour_col = col as isize + delta_col;
+        if in_bounds(
+            neighbour_row,
+            neighbour_col,
+            width as isize,
+            height as isize,
+        ) {
+            let idx: isize = get_idx_from_row_col(neighbour_row, neighbour_col, width as isize);
+            if let Some(&u8::MAX) = fields.get(idx as usize) {
+                fields.swap(clicked_idx, idx as usize);
+            }
+        }
+    }
+    fields
+}
+
+pub fn get_shuffle_callback(
+    width_state: &UseStateHandle<usize>,
+    height_state: &UseStateHandle<usize>,
+    fields: &UseStateHandle<Vec<u8>>,
+) -> Callback<MouseEvent> {
+    let fields = fields.clone();
+    let width_state = width_state.clone();
+    let height_state = height_state.clone();
+    Callback::from(move |_| {
+        for i in 0..5 {
+            let width_state = width_state.clone();
+            let height_state = height_state.clone();
+            let fields = fields.clone();
+            let timeout = gloo_timers::callback::Timeout::new(i * 1000, move || {
+                log::info!("Random move");
+                let mut updated_fields = (&*fields).clone();
+                let empty_field_idx = get_empty_field_idx(&updated_fields);
+                log::info!("Empty field idx {}", empty_field_idx);
+                let swappable_neighbours =
+                    get_swappable_neighbours(*width_state, *height_state, empty_field_idx);
+                log::info!("Swappable neighbours: {:?}", &swappable_neighbours);
+                let chosen_neighbour = swappable_neighbours
+                    .choose(&mut rand::thread_rng())
+                    .expect("Neighbour");
+                updated_fields.swap(empty_field_idx, *chosen_neighbour);
+                // updated_fields.shuffle(&mut thread_rng());
+                fields.set(updated_fields);
+            });
+            timeout.forget();
+        }
+    })
+}
+
+pub fn get_swappable_neighbours(width: usize, height: usize, empty_field_idx: usize) -> Vec<usize> {
+    let (row, col): (usize, usize) = get_row_col_from_idx(empty_field_idx, width);
+
+    [(-1, 0), (1, 0), (0, -1), (0, 1)]
+        .iter()
+        .filter_map(|(delta_row, delta_col)| {
+            let neighbour_row = row as isize + delta_row;
+            let neighbour_col = col as isize + delta_col;
+            match in_bounds(
+                neighbour_row,
+                neighbour_col,
+                width as isize,
+                height as isize,
+            ) {
+                true => {
+                    let idx: isize =
+                        get_idx_from_row_col(neighbour_row, neighbour_col, width as isize);
+                    Some(idx as usize)
+                }
+                false => None,
+            }
+        })
+        .collect()
+}
+
+pub fn get_empty_field_idx(fields: &Vec<u8>) -> usize {
+    for (idx, &value) in fields.iter().enumerate() {
+        if value == u8::MAX {
+            return idx;
+        }
+    }
+
+    panic!("Could not find empty field!");
+}
+
 fn get_left_top(idx: usize, width: usize, unit_size: usize) -> (usize, usize) {
     let (row, col): (usize, usize) = get_row_col_from_idx(idx, width);
     let left = col * unit_size;
@@ -166,33 +262,6 @@ where
     U: std::convert::From<T>,
 {
     row.mul(width).add(col).into()
-}
-
-pub fn trigger_field(fields: &Vec<u8>, width: usize, height: usize, clicked_idx: usize) -> Vec<u8> {
-    let mut fields = fields.clone();
-
-    if let Some(&u8::MAX) = fields.get(clicked_idx) {
-        // Clicked on the empty field - unclear so nothing to do
-        return fields;
-    }
-
-    let (row, col): (usize, usize) = get_row_col_from_idx(clicked_idx, width);
-    for (delta_row, delta_col) in [(-1, 0), (1, 0), (0, -1), (0, 1)] {
-        let neighbour_row = row as isize + delta_row;
-        let neighbour_col = col as isize + delta_col;
-        if in_bounds(
-            neighbour_row,
-            neighbour_col,
-            width as isize,
-            height as isize,
-        ) {
-            let idx: isize = get_idx_from_row_col(neighbour_row, neighbour_col, width as isize);
-            if let Some(&u8::MAX) = fields.get(idx as usize) {
-                fields.swap(clicked_idx, idx as usize);
-            }
-        }
-    }
-    fields
 }
 
 fn in_bounds<T, U>(row: T, col: T, width: U, height: U) -> bool
