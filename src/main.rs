@@ -69,9 +69,13 @@ fn get_field_click_callback(
 fn get_shuffle_callback(fields: &UseStateHandle<Vec<u8>>) -> Callback<MouseEvent> {
     let fields = fields.clone();
     Callback::from(move |_| {
-        log::info!("Shuffling fields");
-        let mut updated_fields = (&*fields).clone();
-        updated_fields.shuffle(&mut thread_rng());
-        fields.set(updated_fields);
+        let fields = fields.clone();
+        let timeout = gloo_timers::callback::Timeout::new(1_000, move || {
+            log::info!("Shuffling fields");
+            let mut updated_fields = (&*fields).clone();
+            updated_fields.shuffle(&mut thread_rng());
+            fields.set(updated_fields);
+        });
+        timeout.forget();
     })
 }
