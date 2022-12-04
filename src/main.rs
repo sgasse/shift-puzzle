@@ -2,6 +2,8 @@ pub mod board;
 pub mod settings;
 
 use board::{initialize_fields, trigger_field, PuzzleBoard};
+use rand::seq::SliceRandom;
+use rand::thread_rng;
 use settings::SettingsBlock;
 use yew::prelude::*;
 
@@ -21,13 +23,13 @@ fn app() -> Html {
     });
     let fields = use_state(|| initialize_fields(*width_state, *height_state));
 
-    // Set up callback
+    // Set up callbacks
     let on_field_click = get_field_click_callback(&width_state, &height_state, &fields);
+    let on_shuffle_click = get_shuffle_callback(&fields);
 
     html! {
         <div class="content">
-            <h1>{ "Shift Puzzle" }</h1>
-            <button>{ "Shuffle" }</button>
+            <div class="header">{ "Shift Puzzle" }</div>
             <PuzzleBoard
                 fields={(&*fields).clone()}
                 on_click={on_field_click.clone()}
@@ -37,6 +39,7 @@ fn app() -> Html {
                 field_unit={"rem"}
                 background_url={(&*bg_url_state).clone()}
             />
+            <button onclick={on_shuffle_click.clone()}>{ "Shuffle" }</button>
 
             <SettingsBlock
                 width_state={width_state}
@@ -59,6 +62,16 @@ fn get_field_click_callback(
     Callback::from(move |clicked_idx: usize| {
         log::info!("Clicked on field with index {}", clicked_idx);
         let updated_fields = trigger_field(&fields, *width_state, *height_state, clicked_idx);
+        fields.set(updated_fields);
+    })
+}
+
+fn get_shuffle_callback(fields: &UseStateHandle<Vec<u8>>) -> Callback<MouseEvent> {
+    let fields = fields.clone();
+    Callback::from(move |_| {
+        log::info!("Shuffling fields");
+        let mut updated_fields = (&*fields).clone();
+        updated_fields.shuffle(&mut thread_rng());
         fields.set(updated_fields);
     })
 }
