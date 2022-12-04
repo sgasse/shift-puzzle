@@ -1,5 +1,6 @@
 :root {
     font-family: Verdana, Geneva, Tahoma, sans-serif;
+    --unit-size: 0.2rem;
 }
 
 .content {
@@ -9,6 +10,7 @@
     justify-content: center;
     width: 100%;
     height: 100%;
+    gap: 1rem;
 }
 
 .settings {
@@ -17,12 +19,25 @@
     justify-content: center;
     width: 100%;
     max-width: 500px;
+    gap: 0.5rem;
+}
+
+input {
+    padding: 0.5rem;
+    border: 2px solid rgba(0, 0, 0, 20%);
+    border-radius: 5px;
+    box-sizing: border-box;
+}
+
+button {
+    padding: 0.5rem;
 }
 
 .dimensions {
     display: flex;
     flex-direction: row;
     justify-content: center;
+    gap: var(--unit-size);
 }
 
 .dimensions-block {
@@ -37,10 +52,22 @@
     align-items: center;
 }
 
-.image-settings > input {
-    width: 80%;
+.image-settings input {
+    width: 100%;
 }
 
-.dimensions-block > input {
-    width: 80%;
+.dimensions input {
+    width: 100%;
+}
+
+.left-align-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+    gap: var(--unit-size);
+}
+
+.field {
+    border: 0.2px solid white;
 }

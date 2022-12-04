@@ -101,7 +101,7 @@ pub fn puzzle_board(
                                     field_props.bg_str)}
                     onclick={on_field_click}
                 >
-                    {field_props.name}
+                    // {field_props.name}
                 </div>
             }
         })

@@ -17,7 +17,7 @@ fn app() -> Html {
     let width_state = use_state(|| 4usize);
     let height_state = use_state(|| 3usize);
     let bg_url_state = use_state(|| {
-        "https://scr.wfcdn.de/21565/Imgur-Memes-des-Jahrzehnts-1579171161-0-0.jpg".to_owned()
+        "https://upload.wikimedia.org/wikipedia/commons/thumb/0/00/Sweet_Bread_Mountain.jpg/640px-Sweet_Bread_Mountain.jpg".to_owned()
     });
     let fields = use_state(|| initialize_fields(*width_state, *height_state));
 
