@@ -21,7 +21,6 @@ pub struct ReactiveBoard {
 
 #[derive(Properties, PartialEq)]
 pub struct ReactiveBoardProps {
-    pub fields: Vec<u8>,
     pub width: usize,
     pub height: usize,
     pub background_url: String,
@@ -33,8 +32,9 @@ impl Component for ReactiveBoard {
 
     fn create(ctx: &Context<Self>) -> Self {
         let props = ctx.props();
+        let fields = initialize_fields(props.width, props.height);
         Self {
-            fields: props.fields.clone(),
+            fields,
             width: props.width,
             height: props.height,
             background_url: props.background_url.clone(),
