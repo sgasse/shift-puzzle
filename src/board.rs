@@ -175,23 +175,37 @@ pub fn get_shuffle_callback(
     let width_state = width_state.clone();
     let height_state = height_state.clone();
     Callback::from(move |_| {
-        for i in 0..5 {
-            let width_state = width_state.clone();
-            let height_state = height_state.clone();
+        let width_state = width_state.clone();
+        let height_state = height_state.clone();
+        let fields = fields.clone();
+        let fields_raw = (&*fields).clone();
+
+        let num_swaps = 6;
+
+        let mut empty_field_idx = get_empty_field_idx(&fields_raw);
+        let mut swaps = Vec::with_capacity(num_swaps);
+
+        for _ in 0..num_swaps {
+            let swappable_neighbours =
+                get_swappable_neighbours(*width_state, *height_state, empty_field_idx);
+            let chosen_neighbour = swappable_neighbours
+                .choose(&mut rand::thread_rng())
+                .expect("Neighbour");
+            swaps.push((empty_field_idx, *chosen_neighbour));
+            empty_field_idx = *chosen_neighbour;
+        }
+
+        log::info!("Swaps: {:?}", &swaps);
+
+        for (i, swap) in swaps.iter().enumerate() {
             let fields = fields.clone();
-            let timeout = gloo_timers::callback::Timeout::new(i * 1000, move || {
-                log::info!("Random move");
+            let swap = swap.clone();
+            let timeout = gloo_timers::callback::Timeout::new((i * 2000) as u32, move || {
+                log::info!("Fields: {:?}", &*fields);
                 let mut updated_fields = (&*fields).clone();
-                let empty_field_idx = get_empty_field_idx(&updated_fields);
-                log::info!("Empty field idx {}", empty_field_idx);
-                let swappable_neighbours =
-                    get_swappable_neighbours(*width_state, *height_state, empty_field_idx);
-                log::info!("Swappable neighbours: {:?}", &swappable_neighbours);
-                let chosen_neighbour = swappable_neighbours
-                    .choose(&mut rand::thread_rng())
-                    .expect("Neighbour");
-                updated_fields.swap(empty_field_idx, *chosen_neighbour);
-                // updated_fields.shuffle(&mut thread_rng());
+                log::info!("Updated fields: {:?}", &updated_fields);
+                log::info!("Swap: {:?}", &swap);
+                updated_fields.swap(swap.0, swap.1);
                 fields.set(updated_fields);
             });
             timeout.forget();
