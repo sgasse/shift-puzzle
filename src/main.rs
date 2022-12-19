@@ -1,8 +1,10 @@
 pub mod board;
+pub mod reactive_board;
 pub mod settings;
 
 use crate::board::get_shuffle_callback;
 use board::{initialize_fields, trigger_field, PuzzleBoard};
+use reactive_board::ReactiveBoard;
 use settings::SettingsBlock;
 use yew::prelude::*;
 
@@ -26,8 +28,13 @@ fn app() -> Html {
     let on_field_click = get_field_click_callback(&width_state, &height_state, &fields);
     let on_shuffle_click = get_shuffle_callback(&width_state, &height_state, &fields);
 
+    let fields_vec = vec![1, 2, 3, 200];
+    let width = 4;
+    let height = 3;
+
     html! {
         <div class="content">
+            <ReactiveBoard fields={fields_vec} {width} {height} />
             <div class="header">{ "Shift Puzzle" }</div>
             <PuzzleBoard
                 fields={(&*fields).clone()}
