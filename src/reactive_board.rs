@@ -2,10 +2,11 @@ use yew::prelude::*;
 
 #[derive(Debug)]
 pub enum ReactiveBoardMsg {
-    CompleteFields(Vec<u8>),
+    CompleteFieldsUpdate(Vec<u8>),
     Swap((usize, usize)),
     NewWidth(usize),
     NewHeigh(usize),
+    ClickedField(usize),
 }
 
 pub struct ReactiveBoard {
@@ -36,7 +37,13 @@ impl Component for ReactiveBoard {
 
     fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
         log::info!("Received message {:?}", msg);
-        true
+        match msg {
+            ReactiveBoardMsg::Swap((a, b)) => {
+                self.fields.swap(a, b);
+                true
+            }
+            _ => true,
+        }
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {

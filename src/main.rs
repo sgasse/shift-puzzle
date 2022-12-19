@@ -28,7 +28,7 @@ fn app() -> Html {
     let on_field_click = get_field_click_callback(&width_state, &height_state, &fields);
     let on_shuffle_click = get_shuffle_callback(&width_state, &height_state, &fields);
 
-    let fields_vec = vec![1, 2, 3, 200];
+    let fields_vec = vec![0, 1, 2, 3, 4, 5, 6, 7, 255];
     let width = 4;
     let height = 3;
 
