@@ -1,4 +1,4 @@
-use crate::board::{PuzzleBoard, PuzzleBoardProps};
+use crate::board::{trigger_field, PuzzleBoard, PuzzleBoardProps};
 use yew::prelude::*;
 
 #[derive(Debug)]
@@ -46,6 +46,9 @@ impl Component for ReactiveBoard {
             ReactiveBoardMsg::Swap((a, b)) => {
                 self.fields.swap(a, b);
                 true
+            }
+            ReactiveBoardMsg::ClickedField(clicked_idx) => {
+                trigger_field(&mut self.fields, self.width, self.height, clicked_idx)
             }
             // Do not re-render
             _ => false,

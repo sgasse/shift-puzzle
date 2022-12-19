@@ -2,7 +2,6 @@ pub mod board;
 pub mod reactive_board;
 pub mod settings;
 
-use crate::board::get_shuffle_callback;
 use board::{initialize_fields, trigger_field, PuzzleBoard};
 use reactive_board::ReactiveBoard;
 use settings::SettingsBlock;
@@ -26,28 +25,14 @@ fn app() -> Html {
     });
     let fields = use_state(|| initialize_fields(*width_state, *height_state));
 
-    // Set up callbacks
-    let on_field_click = get_field_click_callback(&width_state, &height_state, &fields);
-    let on_shuffle_click = get_shuffle_callback(&width_state, &height_state, &fields);
-
     let width = 4;
     let height = 3;
     let fields_vec = initialize_fields(width, height);
 
     html! {
         <div class="content">
-            <ReactiveBoard fields={fields_vec} {width} {height} {background_url} />
             <div class="header">{ "Shift Puzzle" }</div>
-            <PuzzleBoard
-                fields={(&*fields).clone()}
-                on_click={on_field_click.clone()}
-                width={*width_state}
-                height={*height_state}
-                field_size={5}
-                field_unit={"rem"}
-                background_url={(&*bg_url_state).clone()}
-            />
-            <button onclick={on_shuffle_click.clone()}>{ "Shuffle" }</button>
+            <ReactiveBoard fields={fields_vec} {width} {height} {background_url} />
 
             <SettingsBlock
                 width_state={width_state}
@@ -57,19 +42,4 @@ fn app() -> Html {
             />
         </div>
     }
-}
-
-fn get_field_click_callback(
-    width_state: &UseStateHandle<usize>,
-    height_state: &UseStateHandle<usize>,
-    fields: &UseStateHandle<Vec<u8>>,
-) -> Callback<usize> {
-    let width_state = width_state.clone();
-    let height_state = height_state.clone();
-    let fields = fields.clone();
-    Callback::from(move |clicked_idx: usize| {
-        log::info!("Clicked on field with index {}", clicked_idx);
-        let updated_fields = trigger_field(&fields, *width_state, *height_state, clicked_idx);
-        fields.set(updated_fields);
-    })
 }

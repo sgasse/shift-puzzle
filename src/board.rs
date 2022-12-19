@@ -139,12 +139,15 @@ struct FieldProps {
     bg_str: String,
 }
 
-pub fn trigger_field(fields: &Vec<u8>, width: usize, height: usize, clicked_idx: usize) -> Vec<u8> {
-    let mut fields = fields.clone();
-
+pub fn trigger_field(
+    fields: &mut Vec<u8>,
+    width: usize,
+    height: usize,
+    clicked_idx: usize,
+) -> bool {
     if let Some(&u8::MAX) = fields.get(clicked_idx) {
         // Clicked on the empty field - unclear so nothing to do
-        return fields;
+        return false;
     }
 
     let (row, col): (usize, usize) = get_row_col_from_idx(clicked_idx, width);
@@ -160,58 +163,62 @@ pub fn trigger_field(fields: &Vec<u8>, width: usize, height: usize, clicked_idx:
             let idx: isize = get_idx_from_row_col(neighbour_row, neighbour_col, width as isize);
             if let Some(&u8::MAX) = fields.get(idx as usize) {
                 fields.swap(clicked_idx, idx as usize);
+                // Fields swapped - re-render
+                return true;
             }
         }
     }
-    fields
+
+    // No field swapped - do not re-render
+    false
 }
 
-pub fn get_shuffle_callback(
-    width_state: &UseStateHandle<usize>,
-    height_state: &UseStateHandle<usize>,
-    fields: &UseStateHandle<Vec<u8>>,
-) -> Callback<MouseEvent> {
-    let fields = fields.clone();
-    let width_state = width_state.clone();
-    let height_state = height_state.clone();
-    Callback::from(move |_| {
-        let width_state = width_state.clone();
-        let height_state = height_state.clone();
-        let fields = fields.clone();
-        let fields_raw = (&*fields).clone();
+// pub fn get_shuffle_callback(
+//     width_state: &UseStateHandle<usize>,
+//     height_state: &UseStateHandle<usize>,
+//     fields: &UseStateHandle<Vec<u8>>,
+// ) -> Callback<MouseEvent> {
+//     let fields = fields.clone();
+//     let width_state = width_state.clone();
+//     let height_state = height_state.clone();
+//     Callback::from(move |_| {
+//         let width_state = width_state.clone();
+//         let height_state = height_state.clone();
+//         let fields = fields.clone();
+//         let fields_raw = (&*fields).clone();
 
-        let num_swaps = 6;
+//         let num_swaps = 6;
 
-        let mut empty_field_idx = get_empty_field_idx(&fields_raw);
-        let mut swaps = Vec::with_capacity(num_swaps);
+//         let mut empty_field_idx = get_empty_field_idx(&fields_raw);
+//         let mut swaps = Vec::with_capacity(num_swaps);
 
-        for _ in 0..num_swaps {
-            let swappable_neighbours =
-                get_swappable_neighbours(*width_state, *height_state, empty_field_idx);
-            let chosen_neighbour = swappable_neighbours
-                .choose(&mut rand::thread_rng())
-                .expect("Neighbour");
-            swaps.push((empty_field_idx, *chosen_neighbour));
-            empty_field_idx = *chosen_neighbour;
-        }
+//         for _ in 0..num_swaps {
+//             let swappable_neighbours =
+//                 get_swappable_neighbours(*width_state, *height_state, empty_field_idx);
+//             let chosen_neighbour = swappable_neighbours
+//                 .choose(&mut rand::thread_rng())
+//                 .expect("Neighbour");
+//             swaps.push((empty_field_idx, *chosen_neighbour));
+//             empty_field_idx = *chosen_neighbour;
+//         }
 
-        log::info!("Swaps: {:?}", &swaps);
+//         log::info!("Swaps: {:?}", &swaps);
 
-        for (i, swap) in swaps.iter().enumerate() {
-            let fields = fields.clone();
-            let swap = swap.clone();
-            let timeout = gloo_timers::callback::Timeout::new((i * 2000) as u32, move || {
-                log::info!("Fields: {:?}", &*fields);
-                let mut updated_fields = (&*fields).clone();
-                log::info!("Updated fields: {:?}", &updated_fields);
-                log::info!("Swap: {:?}", &swap);
-                updated_fields.swap(swap.0, swap.1);
-                fields.set(updated_fields);
-            });
-            timeout.forget();
-        }
-    })
-}
+//         for (i, swap) in swaps.iter().enumerate() {
+//             let fields = fields.clone();
+//             let swap = swap.clone();
+//             let timeout = gloo_timers::callback::Timeout::new((i * 2000) as u32, move || {
+//                 log::info!("Fields: {:?}", &*fields);
+//                 let mut updated_fields = (&*fields).clone();
+//                 log::info!("Updated fields: {:?}", &updated_fields);
+//                 log::info!("Swap: {:?}", &swap);
+//                 updated_fields.swap(swap.0, swap.1);
+//                 fields.set(updated_fields);
+//             });
+//             timeout.forget();
+//         }
+//     })
+// }
 
 pub fn get_swappable_neighbours(width: usize, height: usize, empty_field_idx: usize) -> Vec<usize> {
     let (row, col): (usize, usize) = get_row_col_from_idx(empty_field_idx, width);
