@@ -16,6 +16,8 @@ fn main() {
 
 #[function_component(App)]
 fn app() -> Html {
+    let background_url = "https://upload.wikimedia.org/wikipedia/commons/thumb/0/00/Sweet_Bread_Mountain.jpg/640px-Sweet_Bread_Mountain.jpg".to_owned();
+
     // Set up state
     let width_state = use_state(|| 4usize);
     let height_state = use_state(|| 3usize);
@@ -34,7 +36,7 @@ fn app() -> Html {
 
     html! {
         <div class="content">
-            <ReactiveBoard fields={fields_vec} {width} {height} />
+            <ReactiveBoard fields={fields_vec} {width} {height} {background_url} />
             <div class="header">{ "Shift Puzzle" }</div>
             <PuzzleBoard
                 fields={(&*fields).clone()}

@@ -4,16 +4,18 @@ use yew::prelude::*;
 #[derive(Debug)]
 pub enum ReactiveBoardMsg {
     CompleteFieldsUpdate(Vec<u8>),
+    WidthUpdate(usize),
+    HeightUpdate(usize),
     Swap((usize, usize)),
-    NewWidth(usize),
-    NewHeigh(usize),
     ClickedField(usize),
+    BackgroundUrlUpdate(String),
 }
 
 pub struct ReactiveBoard {
     fields: Vec<u8>,
     width: usize,
     height: usize,
+    background_url: String,
 }
 
 #[derive(Properties, PartialEq)]
@@ -21,6 +23,7 @@ pub struct ReactiveBoardProps {
     pub fields: Vec<u8>,
     pub width: usize,
     pub height: usize,
+    pub background_url: String,
 }
 
 impl Component for ReactiveBoard {
@@ -33,6 +36,7 @@ impl Component for ReactiveBoard {
             fields: props.fields.clone(),
             width: props.width,
             height: props.height,
+            background_url: props.background_url.clone(),
         }
     }
 
@@ -90,7 +94,7 @@ impl Component for ReactiveBoard {
                     height={self.height}
                     field_size={5}
                     field_unit={"rem"}
-                    background_url={"https://upload.wikimedia.org/wikipedia/commons/thumb/0/00/Sweet_Bread_Mountain.jpg/640px-Sweet_Bread_Mountain.jpg".to_owned()}
+                    background_url={self.background_url.clone()}
                 />
             </>
         }
