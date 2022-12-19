@@ -1,3 +1,4 @@
+use crate::board::{PuzzleBoard, PuzzleBoardProps};
 use yew::prelude::*;
 
 #[derive(Debug)]
@@ -42,7 +43,8 @@ impl Component for ReactiveBoard {
                 self.fields.swap(a, b);
                 true
             }
-            _ => true,
+            // Do not re-render
+            _ => false,
         }
     }
 
@@ -65,15 +67,31 @@ impl Component for ReactiveBoard {
             }
         });
 
+        let inner_callback = ctx
+            .link()
+            .callback(move |clicked_idx: usize| ReactiveBoardMsg::ClickedField(clicked_idx));
+        let field_click_callback = Callback::from(move |clicked_idx: usize| {
+            log::info!("Clicked on field with index {}", clicked_idx);
+            inner_callback.emit(clicked_idx);
+        });
+
         html! {
             <>
-                <h3>
-                    { format!("Fields: {:?}", &self.fields)}
-                </h3>
+                <div>{ format!("Fields: {:?}", &self.fields)}</div>
                 <div>{format!("Width: {}", &self.width)}</div>
                 <div>{format!("Height: {}", &self.height)}</div>
 
                 <button onclick={timed_callback}>{"Timed swaps"}</button>
+
+                <PuzzleBoard
+                    fields={self.fields.clone()}
+                    on_click={field_click_callback}
+                    width={self.width}
+                    height={self.height}
+                    field_size={5}
+                    field_unit={"rem"}
+                    background_url={"https://upload.wikimedia.org/wikipedia/commons/thumb/0/00/Sweet_Bread_Mountain.jpg/640px-Sweet_Bread_Mountain.jpg".to_owned()}
+                />
             </>
         }
     }
