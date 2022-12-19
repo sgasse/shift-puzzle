@@ -34,12 +34,12 @@ fn app() -> Html {
             <div class="header">{ "Shift Puzzle" }</div>
             <ReactiveBoard fields={fields_vec} {width} {height} {background_url} />
 
-            <SettingsBlock
-                width_state={width_state}
-                height_state={height_state}
-                bg_url_state={bg_url_state}
-                fields={fields}
-            />
+            // <SettingsBlock
+            //     width_state={width_state}
+            //     height_state={height_state}
+            //     bg_url_state={bg_url_state}
+            //     fields={fields}
+            // />
         </div>
     }
 }
