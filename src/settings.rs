@@ -1,4 +1,3 @@
-use crate::board::initialize_fields;
 use yew::prelude::*;
 
 #[derive(Properties, PartialEq)]

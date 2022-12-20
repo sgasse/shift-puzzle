@@ -1,8 +1,4 @@
-pub mod board;
-pub mod reactive_board;
-pub mod settings;
-
-use reactive_board::ReactiveBoard;
+use shift_puzzle::reactive_board::ReactiveBoard;
 use yew::prelude::*;
 
 fn main() {

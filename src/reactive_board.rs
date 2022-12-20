@@ -1,4 +1,4 @@
-use crate::board::{initialize_fields, trigger_field, PuzzleBoard, PuzzleBoardProps};
+use crate::board::{initialize_fields, trigger_field, PuzzleBoard};
 use crate::settings::SettingsBlock;
 use yew::prelude::*;
 
