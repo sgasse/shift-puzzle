@@ -87,25 +87,7 @@ impl Component for ReactiveBoard {
 
     fn view(&self, ctx: &Context<Self>) -> Html {
         let ctx = ctx.clone();
-        let empty_field_idx = get_empty_field_idx(&self.fields);
-        let shuffle_sequence = get_shuffle_sequence(self.width, self.height, empty_field_idx, 20);
-        log::info!("Shuffle sequence: {:?}", &shuffle_sequence);
-        let inner_callbacks: Vec<_> = shuffle_sequence
-            .into_iter()
-            .map(|(a, b)| {
-                ctx.link()
-                    .callback(move |_: ()| ReactiveBoardMsg::Swap((a as usize, b as usize)))
-            })
-            .collect();
-        let timed_callback = Callback::from(move |_| {
-            let inner_callbacks = inner_callbacks.clone();
-            for (i, inner_callback) in inner_callbacks.into_iter().enumerate() {
-                let timeout = gloo_timers::callback::Timeout::new((i * 250) as u32, move || {
-                    inner_callback.emit(());
-                });
-                timeout.forget();
-            }
-        });
+        let timed_callback = self.get_button_callbacks(ctx);
 
         let field_click_callback = ctx
             .link()
@@ -153,5 +135,38 @@ impl Component for ReactiveBoard {
                 </Expander>
             </>
         }
+    }
+}
+
+impl ReactiveBoard {
+    fn get_button_callbacks(&self, ctx: &Context<ReactiveBoard>) -> Callback<MouseEvent> {
+        // Create a callback to send a swap message that can be passed into
+        // closures
+        let swap_callback = ctx.link().callback(move |swap_pair: (usize, usize)| {
+            ReactiveBoardMsg::Swap((swap_pair.0, swap_pair.1))
+        });
+
+        // Locally-bind values of self that we want to pass into the closure
+        let empty_field_idx = get_empty_field_idx(&self.fields);
+        let width = self.width;
+        let height = self.height;
+
+        let timed_callback = Callback::from(move |_| {
+            // Calculate a shuffle sequence only when the button is clicked, not
+            // on every re-render
+            let shuffle_sequence = get_shuffle_sequence(width, height, empty_field_idx, 20);
+            log::info!("Shuffle sequence: {:?}", &shuffle_sequence);
+
+            let swap_callback = swap_callback.clone();
+
+            for (i, swap) in shuffle_sequence.into_iter().enumerate() {
+                let swap_callback = swap_callback.clone();
+                let timeout = gloo_timers::callback::Timeout::new((i * 250) as u32, move || {
+                    swap_callback.emit((swap.0, swap.1));
+                });
+                timeout.forget();
+            }
+        });
+        timed_callback
     }
 }
