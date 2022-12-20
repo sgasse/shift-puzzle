@@ -102,21 +102,17 @@ impl Component for ReactiveBoard {
             }
         });
 
-        let inner_callback = ctx
+        let field_click_callback = ctx
             .link()
             .callback(move |clicked_idx: usize| ReactiveBoardMsg::ClickedField(clicked_idx));
-        let field_click_callback = Callback::from(move |clicked_idx: usize| {
-            log::info!("Clicked on field with index {}", clicked_idx);
-            inner_callback.emit(clicked_idx);
-        });
 
-        let inner_width_callback = ctx
+        let width_change_callback = ctx
             .link()
             .callback(move |width: usize| ReactiveBoardMsg::WidthUpdate(width));
-        let inner_height_callback = ctx
+        let height_change_callback = ctx
             .link()
             .callback(move |height: usize| ReactiveBoardMsg::HeightUpdate(height));
-        let inner_bg_url_callback = ctx
+        let bg_url_change_callback = ctx
             .link()
             .callback(move |bg_url: String| ReactiveBoardMsg::BackgroundUrlUpdate(bg_url));
 
@@ -139,9 +135,9 @@ impl Component for ReactiveBoard {
                         width={self.width}
                         height={self.height}
                         bg_url={self.background_url.clone()}
-                        width_callback={inner_width_callback}
-                        height_callback={inner_height_callback}
-                        bg_url_callback={inner_bg_url_callback}
+                        width_callback={width_change_callback}
+                        height_callback={height_change_callback}
+                        bg_url_callback={bg_url_change_callback}
                     />
                 </Expander>
 

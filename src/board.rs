@@ -48,7 +48,10 @@ pub fn puzzle_board(
         .map(|(idx, &field)| {
             let on_field_click = {
                 let on_click = on_click.clone();
-                Callback::from(move |_| on_click.emit(idx))
+                Callback::from(move |_| {
+                    log::info!("Clicked on field with index {}", idx);
+                    on_click.emit(idx);
+                })
             };
             let bg_string = format!(
                 "background-size: {} {}; \
@@ -90,7 +93,7 @@ pub fn puzzle_board(
                                     width: {}; \
                                     height: {}; \
                                     position: absolute; \
-                                    transition: all 0.5s; \
+                                    transition: all 0.2s; \
                                     background-position: {} {}; \
                                     {}",
                                     as_unit(field_props.left_pos),
@@ -102,6 +105,7 @@ pub fn puzzle_board(
                                     field_props.bg_str)}
                     onclick={on_field_click}
                 >
+                    // Maybe optionally display field index?
                     // {field_props.name}
                 </div>
             }
