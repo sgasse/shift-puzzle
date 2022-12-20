@@ -10,8 +10,8 @@ fn main() {
 #[function_component(App)]
 fn app() -> Html {
     // Default values
-    let background_url = "https://upload.wikimedia.org/wikipedia/commons/thumb/0/00/Sweet_Bread_Mountain.jpg/640px-Sweet_Bread_Mountain.jpg".to_owned();
-    let width = 4;
+    let background_url = "https://upload.wikimedia.org/wikipedia/commons/thumb/6/61/Blue_Marble_Western_Hemisphere.jpg/600px-Blue_Marble_Western_Hemisphere.jpg?20130305115950".to_owned();
+    let width = 3;
     let height = 3;
 
     html! {
