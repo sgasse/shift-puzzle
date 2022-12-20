@@ -1,4 +1,4 @@
-use shift_puzzle::slide_puzzle::SlidePuzzle;
+use slide_puzzle::slide_puzzle::SlidePuzzle;
 use yew::prelude::*;
 
 fn main() {
