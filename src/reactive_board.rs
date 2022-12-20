@@ -1,4 +1,6 @@
-use crate::board::{initialize_fields, trigger_field, PuzzleBoard};
+use crate::board::{
+    get_empty_field_idx, get_shuffle_sequence, initialize_fields, trigger_field, PuzzleBoard,
+};
 use crate::expander::Expander;
 use crate::settings::SettingsBlock;
 use yew::prelude::*;
@@ -85,7 +87,10 @@ impl Component for ReactiveBoard {
 
     fn view(&self, ctx: &Context<Self>) -> Html {
         let ctx = ctx.clone();
-        let inner_callbacks: Vec<_> = [(1, 2), (2, 3), (3, 4)]
+        let empty_field_idx = get_empty_field_idx(&self.fields);
+        let shuffle_sequence = get_shuffle_sequence(self.width, self.height, empty_field_idx, 20);
+        log::info!("Shuffle sequence: {:?}", &shuffle_sequence);
+        let inner_callbacks: Vec<_> = shuffle_sequence
             .into_iter()
             .map(|(a, b)| {
                 ctx.link()
@@ -95,7 +100,7 @@ impl Component for ReactiveBoard {
         let timed_callback = Callback::from(move |_| {
             let inner_callbacks = inner_callbacks.clone();
             for (i, inner_callback) in inner_callbacks.into_iter().enumerate() {
-                let timeout = gloo_timers::callback::Timeout::new((i * 1000) as u32, move || {
+                let timeout = gloo_timers::callback::Timeout::new((i * 250) as u32, move || {
                     inner_callback.emit(());
                 });
                 timeout.forget();
@@ -128,7 +133,7 @@ impl Component for ReactiveBoard {
                     background_url={self.background_url.clone()}
                 />
 
-                <button onclick={timed_callback}>{"Timed swaps"}</button>
+                <button onclick={timed_callback}>{"Shuffle"}</button>
 
                 <Expander title={"Settings"}>
                     <SettingsBlock
