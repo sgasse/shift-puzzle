@@ -122,14 +122,6 @@ impl Component for ReactiveBoard {
 
         html! {
             <>
-                <Expander>
-                    <div>{ format!("Fields: {:?}", &self.fields)}</div>
-                    <div>{format!("Width: {}", &self.width)}</div>
-                    <div>{format!("Height: {}", &self.height)}</div>
-                </Expander>
-
-                <button onclick={timed_callback}>{"Timed swaps"}</button>
-
                 <PuzzleBoard
                     fields={self.fields.clone()}
                     on_click={field_click_callback}
@@ -140,14 +132,24 @@ impl Component for ReactiveBoard {
                     background_url={self.background_url.clone()}
                 />
 
-                <SettingsBlock
-                    width={self.width}
-                    height={self.height}
-                    bg_url={self.background_url.clone()}
-                    width_callback={inner_width_callback}
-                    height_callback={inner_height_callback}
-                    bg_url_callback={inner_bg_url_callback}
-                />
+                <button onclick={timed_callback}>{"Timed swaps"}</button>
+
+                <Expander title={"Settings"}>
+                    <SettingsBlock
+                        width={self.width}
+                        height={self.height}
+                        bg_url={self.background_url.clone()}
+                        width_callback={inner_width_callback}
+                        height_callback={inner_height_callback}
+                        bg_url_callback={inner_bg_url_callback}
+                    />
+                </Expander>
+
+                <Expander title={"Debug"}>
+                    <div>{ format!("Fields: {:?}", &self.fields)}</div>
+                    <div>{format!("Width: {}", &self.width)}</div>
+                    <div>{format!("Height: {}", &self.height)}</div>
+                </Expander>
             </>
         }
     }

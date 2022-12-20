@@ -2,6 +2,7 @@ use yew::prelude::*;
 
 #[derive(Properties, Debug, PartialEq)]
 pub struct ExpanderProps {
+    pub title: String,
     #[prop_or_default]
     pub children: Children,
 }
@@ -16,15 +17,27 @@ pub fn Expander(props: &ExpanderProps) -> Html {
     };
 
     html! {
-        <div>
-            if *expanded {
-                <button onclick={toggle_callback}>{"▼"}</button>
-                <div>
-                    {props.children.clone()}
+        <div style="display: flex; flex-direction: row;">
+            <div style="display: flex; flex-direction: column;">
+                <div onclick={toggle_callback}>
+                    if *expanded {
+                        {"▼"}
+                    } else {
+                        {"▶"}
+                    }
                 </div>
-            } else {
-                <button onclick={toggle_callback}>{"▶"}</button>
-            }
+            </div>
+
+            <div style="display: flex; flex-direction: column;">
+                <div>
+                    {props.title.clone()}
+                </div>
+                if *expanded {
+                    <div>
+                        {props.children.clone()}
+                    </div>
+                }
+            </div>
         </div>
     }
 }
