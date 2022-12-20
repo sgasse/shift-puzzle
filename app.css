@@ -1,6 +1,28 @@
 :root {
     font-family: Verdana, Geneva, Tahoma, sans-serif;
     --unit-size: 0.2rem;
+    font-size: 60px;
+}
+
+button {
+    font-size: inherit;
+    width: 90%;
+    max-width: 900px;
+    border-radius: 20px;
+    padding: 0.5rem;
+    cursor: pointer;
+}
+
+input {
+    font-size: inherit;
+    padding: 0.5rem;
+    border: 2px solid rgba(0, 0, 0, 20%);
+    border-radius: 20px;
+    box-sizing: border-box;
+}
+
+.clickable:hover {
+    cursor: pointer;
 }
 
 .content {
@@ -13,24 +35,18 @@
     gap: 1rem;
 }
 
+.header {
+    margin-top: 2rem;
+    font-weight: 700;
+}
+
 .settings {
     display: flex;
     flex-direction: column;
     justify-content: center;
     width: 100%;
-    max-width: 500px;
+    max-width: 900px;
     gap: 0.5rem;
-}
-
-input {
-    padding: 0.5rem;
-    border: 2px solid rgba(0, 0, 0, 20%);
-    border-radius: 5px;
-    box-sizing: border-box;
-}
-
-button {
-    padding: 0.5rem;
 }
 
 .dimensions {
@@ -70,4 +86,20 @@ button {
 
 .field {
     border: 0.2px solid white;
+}
+
+.expander-wrapper {
+    gap: 0.5rem;
+    display: flex;
+    flex-direction: row;
+}
+
+.expander-context {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+}
+
+.column-flex {
+    display: flex;
+    flex-direction: column;
 }

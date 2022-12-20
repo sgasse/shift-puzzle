@@ -17,9 +17,9 @@ pub fn Expander(props: &ExpanderProps) -> Html {
     };
 
     html! {
-        <div style="display: flex; flex-direction: row;">
-            <div style="display: flex; flex-direction: column;">
-                <div onclick={toggle_callback.clone()}>
+        <div class="expander-wrapper">
+            <div class="column-flex">
+                <div class="clickable" onclick={toggle_callback.clone()}>
                     if *expanded {
                         {"▼"}
                     } else {
@@ -28,12 +28,12 @@ pub fn Expander(props: &ExpanderProps) -> Html {
                 </div>
             </div>
 
-            <div style="display: flex; flex-direction: column;">
-                <div onclick={toggle_callback}>
+            <div class="column-flex">
+                <div class="clickable" onclick={toggle_callback}>
                     {props.title.clone()}
                 </div>
                 if *expanded {
-                    <div>
+                    <div class="expander-context">
                         {props.children.clone()}
                     </div>
                 }

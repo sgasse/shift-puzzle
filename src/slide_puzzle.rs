@@ -118,7 +118,7 @@ impl Component for SlidePuzzle {
                     on_click={field_click_callback}
                     width={self.width}
                     height={self.height}
-                    field_size={5}
+                    field_size={4}
                     field_unit={"rem"}
                     background_url={self.background_url.clone()}
                 />
