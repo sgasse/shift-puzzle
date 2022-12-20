@@ -1,4 +1,5 @@
 use crate::board::{initialize_fields, trigger_field, PuzzleBoard};
+use crate::expander::Expander;
 use crate::settings::SettingsBlock;
 use yew::prelude::*;
 
@@ -121,9 +122,11 @@ impl Component for ReactiveBoard {
 
         html! {
             <>
-                <div>{ format!("Fields: {:?}", &self.fields)}</div>
-                <div>{format!("Width: {}", &self.width)}</div>
-                <div>{format!("Height: {}", &self.height)}</div>
+                <Expander>
+                    <div>{ format!("Fields: {:?}", &self.fields)}</div>
+                    <div>{format!("Width: {}", &self.width)}</div>
+                    <div>{format!("Height: {}", &self.height)}</div>
+                </Expander>
 
                 <button onclick={timed_callback}>{"Timed swaps"}</button>
 
