@@ -126,8 +126,8 @@ pub fn puzzle_board(
     }
 }
 
-pub fn initialize_fields(width: usize, height: usize) -> Vec<u8> {
-    let num_elements = usize::min(width * height, u8::MAX as usize) as u8;
+pub fn initialize_fields(num_elements: usize) -> Vec<u8> {
+    let num_elements = usize::min(num_elements, u8::MAX as usize) as u8;
     let mut fields: Vec<_> = (0..(num_elements - 1)).into_iter().collect();
     fields.push(u8::MAX);
     fields

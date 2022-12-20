@@ -35,7 +35,7 @@ impl Component for ReactiveBoard {
 
     fn create(ctx: &Context<Self>) -> Self {
         let props = ctx.props();
-        let fields = initialize_fields(props.width, props.height);
+        let fields = initialize_fields(props.width * props.height);
         Self {
             fields,
             width: props.width,
@@ -60,7 +60,7 @@ impl Component for ReactiveBoard {
             ReactiveBoardMsg::WidthUpdate(width) => match width != self.width {
                 true => {
                     self.width = width;
-                    self.fields = initialize_fields(self.width, self.height);
+                    self.fields = initialize_fields(self.width * self.height);
                     true
                 }
                 false => false,
@@ -68,7 +68,7 @@ impl Component for ReactiveBoard {
             ReactiveBoardMsg::HeightUpdate(height) => match height != self.height {
                 true => {
                     self.height = height;
-                    self.fields = initialize_fields(self.width, self.height);
+                    self.fields = initialize_fields(self.width * self.height);
                     true
                 }
                 false => false,
