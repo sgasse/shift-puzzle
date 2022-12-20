@@ -80,6 +80,13 @@ impl Component for ReactiveBoard {
                 }
                 false => false,
             },
+            ReactiveBoardMsg::CompleteFieldsUpdate(fields) => match fields != self.fields {
+                true => {
+                    self.fields = fields;
+                    true
+                }
+                false => false,
+            },
             // Do not re-render
             _ => false,
         }
@@ -87,7 +94,8 @@ impl Component for ReactiveBoard {
 
     fn view(&self, ctx: &Context<Self>) -> Html {
         let ctx = ctx.clone();
-        let timed_callback = self.get_button_callbacks(ctx);
+        let quick_swap_callback = self.get_quick_swap_callback(ctx);
+        let granular_swap_callback = self.get_granular_swap_callback(ctx);
 
         let field_click_callback = ctx
             .link()
@@ -115,7 +123,8 @@ impl Component for ReactiveBoard {
                     background_url={self.background_url.clone()}
                 />
 
-                <button onclick={timed_callback}>{"Shuffle"}</button>
+                <button onclick={quick_swap_callback}>{"Shuffle Quick"}</button>
+                <button onclick={granular_swap_callback}>{"Shuffle Granular"}</button>
 
                 <Expander title={"Settings"}>
                     <SettingsBlock
@@ -139,7 +148,36 @@ impl Component for ReactiveBoard {
 }
 
 impl ReactiveBoard {
-    fn get_button_callbacks(&self, ctx: &Context<ReactiveBoard>) -> Callback<MouseEvent> {
+    fn get_quick_swap_callback(&self, ctx: &Context<ReactiveBoard>) -> Callback<MouseEvent> {
+        // Create a callback to send a fields message that can be passed into
+        // closures
+        let swap_callback = ctx
+            .link()
+            .callback(move |fields: Vec<u8>| ReactiveBoardMsg::CompleteFieldsUpdate(fields));
+
+        // Locally-bind values of self that we want to pass into the closure
+        let fields = self.fields.clone();
+        let empty_field_idx = get_empty_field_idx(&self.fields);
+        let width = self.width;
+        let height = self.height;
+
+        let quick_swap_callback = Callback::from(move |_| {
+            let mut fields = fields.clone();
+            // Calculate a shuffle sequence only when the button is clicked, not
+            // on every re-render
+            let shuffle_sequence = get_shuffle_sequence(width, height, empty_field_idx, 20);
+            log::info!("Shuffle sequence: {:?}", &shuffle_sequence);
+
+            for swap in shuffle_sequence {
+                fields.swap(swap.0, swap.1);
+            }
+
+            swap_callback.emit(fields);
+        });
+        quick_swap_callback
+    }
+
+    fn get_granular_swap_callback(&self, ctx: &Context<ReactiveBoard>) -> Callback<MouseEvent> {
         // Create a callback to send a swap message that can be passed into
         // closures
         let swap_callback = ctx.link().callback(move |swap_pair: (usize, usize)| {
@@ -151,7 +189,7 @@ impl ReactiveBoard {
         let width = self.width;
         let height = self.height;
 
-        let timed_callback = Callback::from(move |_| {
+        let granular_swap_callback = Callback::from(move |_| {
             // Calculate a shuffle sequence only when the button is clicked, not
             // on every re-render
             let shuffle_sequence = get_shuffle_sequence(width, height, empty_field_idx, 20);
@@ -167,6 +205,6 @@ impl ReactiveBoard {
                 timeout.forget();
             }
         });
-        timed_callback
+        granular_swap_callback
     }
 }
