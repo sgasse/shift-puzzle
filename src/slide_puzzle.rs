@@ -7,7 +7,7 @@ use crate::solver::find_swap_order;
 use yew::prelude::*;
 
 #[derive(Debug)]
-pub enum ReactiveBoardMsg {
+pub enum SlidePuzzleMsg {
     CompleteFieldsUpdate(Vec<u8>),
     WidthUpdate(usize),
     HeightUpdate(usize),
@@ -16,7 +16,7 @@ pub enum ReactiveBoardMsg {
     BackgroundUrlUpdate(String),
 }
 
-pub struct ReactiveBoard {
+pub struct SlidePuzzle {
     fields: Vec<u8>,
     width: usize,
     height: usize,
@@ -24,15 +24,15 @@ pub struct ReactiveBoard {
 }
 
 #[derive(Properties, PartialEq)]
-pub struct ReactiveBoardProps {
+pub struct SlidePuzzleProps {
     pub width: usize,
     pub height: usize,
     pub background_url: String,
 }
 
-impl Component for ReactiveBoard {
-    type Message = ReactiveBoardMsg;
-    type Properties = ReactiveBoardProps;
+impl Component for SlidePuzzle {
+    type Message = SlidePuzzleMsg;
+    type Properties = SlidePuzzleProps;
 
     fn create(ctx: &Context<Self>) -> Self {
         let props = ctx.props();
@@ -48,17 +48,17 @@ impl Component for ReactiveBoard {
     fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
         log::info!("Received message {:?}", msg);
         match msg {
-            ReactiveBoardMsg::Swap((a, b)) => match a != b {
+            SlidePuzzleMsg::Swap((a, b)) => match a != b {
                 true => {
                     self.fields.swap(a, b);
                     true
                 }
                 false => false,
             },
-            ReactiveBoardMsg::ClickedField(clicked_idx) => {
+            SlidePuzzleMsg::ClickedField(clicked_idx) => {
                 trigger_field(&mut self.fields, self.width, self.height, clicked_idx)
             }
-            ReactiveBoardMsg::WidthUpdate(width) => match width != self.width {
+            SlidePuzzleMsg::WidthUpdate(width) => match width != self.width {
                 true => {
                     self.width = width;
                     self.fields = initialize_fields(self.width * self.height);
@@ -66,7 +66,7 @@ impl Component for ReactiveBoard {
                 }
                 false => false,
             },
-            ReactiveBoardMsg::HeightUpdate(height) => match height != self.height {
+            SlidePuzzleMsg::HeightUpdate(height) => match height != self.height {
                 true => {
                     self.height = height;
                     self.fields = initialize_fields(self.width * self.height);
@@ -74,14 +74,14 @@ impl Component for ReactiveBoard {
                 }
                 false => false,
             },
-            ReactiveBoardMsg::BackgroundUrlUpdate(bg_url) => match bg_url != self.background_url {
+            SlidePuzzleMsg::BackgroundUrlUpdate(bg_url) => match bg_url != self.background_url {
                 true => {
                     self.background_url = bg_url;
                     true
                 }
                 false => false,
             },
-            ReactiveBoardMsg::CompleteFieldsUpdate(fields) => match fields != self.fields {
+            SlidePuzzleMsg::CompleteFieldsUpdate(fields) => match fields != self.fields {
                 true => {
                     self.fields = fields;
                     true
@@ -99,17 +99,17 @@ impl Component for ReactiveBoard {
 
         let field_click_callback = ctx
             .link()
-            .callback(move |clicked_idx: usize| ReactiveBoardMsg::ClickedField(clicked_idx));
+            .callback(move |clicked_idx: usize| SlidePuzzleMsg::ClickedField(clicked_idx));
 
         let width_change_callback = ctx
             .link()
-            .callback(move |width: usize| ReactiveBoardMsg::WidthUpdate(width));
+            .callback(move |width: usize| SlidePuzzleMsg::WidthUpdate(width));
         let height_change_callback = ctx
             .link()
-            .callback(move |height: usize| ReactiveBoardMsg::HeightUpdate(height));
+            .callback(move |height: usize| SlidePuzzleMsg::HeightUpdate(height));
         let bg_url_change_callback = ctx
             .link()
-            .callback(move |bg_url: String| ReactiveBoardMsg::BackgroundUrlUpdate(bg_url));
+            .callback(move |bg_url: String| SlidePuzzleMsg::BackgroundUrlUpdate(bg_url));
 
         html! {
             <>
@@ -139,22 +139,20 @@ impl Component for ReactiveBoard {
                 </Expander>
 
                 <Expander title={"Debug"}>
-                    <div>{ format!("Fields: {:?}", &self.fields)}</div>
-                    <div>{format!("Width: {}", &self.width)}</div>
-                    <div>{format!("Height: {}", &self.height)}</div>
+                    <div>{format!("Fields: {:?}", &self.fields)}</div>
                 </Expander>
             </>
         }
     }
 }
 
-impl ReactiveBoard {
-    fn get_quick_swap_callback(&self, ctx: &Context<ReactiveBoard>) -> Callback<MouseEvent> {
+impl SlidePuzzle {
+    fn get_quick_swap_callback(&self, ctx: &Context<SlidePuzzle>) -> Callback<MouseEvent> {
         // Create a callback to send a fields message that can be passed into
         // closures
         let swap_callback = ctx
             .link()
-            .callback(move |fields: Vec<u8>| ReactiveBoardMsg::CompleteFieldsUpdate(fields));
+            .callback(move |fields: Vec<u8>| SlidePuzzleMsg::CompleteFieldsUpdate(fields));
 
         // Locally-bind values of self that we want to pass into the closure
         let fields = self.fields.clone();
@@ -178,11 +176,11 @@ impl ReactiveBoard {
         quick_swap_callback
     }
 
-    fn get_granular_swap_callback(&self, ctx: &Context<ReactiveBoard>) -> Callback<MouseEvent> {
+    fn get_granular_swap_callback(&self, ctx: &Context<SlidePuzzle>) -> Callback<MouseEvent> {
         // Create a callback to send a swap message that can be passed into
         // closures
         let swap_callback = ctx.link().callback(move |swap_pair: (usize, usize)| {
-            ReactiveBoardMsg::Swap((swap_pair.0, swap_pair.1))
+            SlidePuzzleMsg::Swap((swap_pair.0, swap_pair.1))
         });
 
         // Locally-bind values of self that we want to pass into the closure
@@ -209,11 +207,11 @@ impl ReactiveBoard {
         granular_swap_callback
     }
 
-    fn get_solve_callback(&self, ctx: &Context<ReactiveBoard>) -> Callback<MouseEvent> {
+    fn get_solve_callback(&self, ctx: &Context<SlidePuzzle>) -> Callback<MouseEvent> {
         // Create a callback to send a swap message that can be passed into
         // closures
         let swap_callback = ctx.link().callback(move |swap_pair: (usize, usize)| {
-            ReactiveBoardMsg::Swap((swap_pair.0, swap_pair.1))
+            SlidePuzzleMsg::Swap((swap_pair.0, swap_pair.1))
         });
 
         // Locally-bind values of self that we want to pass into the closure

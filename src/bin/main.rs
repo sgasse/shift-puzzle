@@ -1,4 +1,4 @@
-use shift_puzzle::reactive_board::ReactiveBoard;
+use shift_puzzle::slide_puzzle::SlidePuzzle;
 use yew::prelude::*;
 
 fn main() {
@@ -16,8 +16,8 @@ fn app() -> Html {
 
     html! {
         <div class="content">
-            <div class="header">{ "Shift Puzzle" }</div>
-            <ReactiveBoard {width} {height} {background_url} />
+            <div class="header">{ "Slide Puzzle" }</div>
+            <SlidePuzzle {width} {height} {background_url} />
         </div>
     }
 }
