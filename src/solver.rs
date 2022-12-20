@@ -49,8 +49,12 @@ pub fn find_swap_order(fields: &Vec<u8>, width: usize, height: usize) -> Vec<(us
         (empty_field_idx, empty_field_idx),
     )]);
 
+    let mut num_iterations = 0;
+
     // Get state information for unseen state
     while let Some((cur_fields, cur_hash, parent_hash, last_swap)) = states_to_explore.pop_front() {
+        num_iterations += 1;
+
         // Add state hash with parent and last swap to map
         parent_map.insert(cur_hash.clone(), (parent_hash, last_swap));
 
@@ -87,6 +91,8 @@ pub fn find_swap_order(fields: &Vec<u8>, width: usize, height: usize) -> Vec<(us
         states_to_explore.extend(unseen_tuples.into_iter());
     }
 
+    log::debug!("Number of iterations in solver: {}", num_iterations);
+
     // Extract the path of swaps from the initial position to the target if it
     // exists
     match parent_map.contains_key(&target_hash) {
@@ -104,6 +110,8 @@ pub fn find_swap_order(fields: &Vec<u8>, width: usize, height: usize) -> Vec<(us
 
                 next_hash = parent_hash.clone();
             }
+
+            log::debug!("Number of swaps to solve: {}", swaps.len());
 
             swaps.into_iter().rev().collect()
         }

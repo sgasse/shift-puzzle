@@ -3,6 +3,7 @@ use crate::board::{
 };
 use crate::expander::Expander;
 use crate::settings::SettingsBlock;
+use crate::solver::find_swap_order;
 use yew::prelude::*;
 
 #[derive(Debug)]
@@ -87,8 +88,6 @@ impl Component for ReactiveBoard {
                 }
                 false => false,
             },
-            // Do not re-render
-            _ => false,
         }
     }
 
@@ -96,6 +95,7 @@ impl Component for ReactiveBoard {
         let ctx = ctx.clone();
         let quick_swap_callback = self.get_quick_swap_callback(ctx);
         let granular_swap_callback = self.get_granular_swap_callback(ctx);
+        let solve_callback = self.get_solve_callback(ctx);
 
         let field_click_callback = ctx
             .link()
@@ -125,6 +125,7 @@ impl Component for ReactiveBoard {
 
                 <button onclick={quick_swap_callback}>{"Shuffle Quick"}</button>
                 <button onclick={granular_swap_callback}>{"Shuffle Granular"}</button>
+                <button onclick={solve_callback}>{"Solve"}</button>
 
                 <Expander title={"Settings"}>
                     <SettingsBlock
@@ -206,5 +207,37 @@ impl ReactiveBoard {
             }
         });
         granular_swap_callback
+    }
+
+    fn get_solve_callback(&self, ctx: &Context<ReactiveBoard>) -> Callback<MouseEvent> {
+        // Create a callback to send a swap message that can be passed into
+        // closures
+        let swap_callback = ctx.link().callback(move |swap_pair: (usize, usize)| {
+            ReactiveBoardMsg::Swap((swap_pair.0, swap_pair.1))
+        });
+
+        // Locally-bind values of self that we want to pass into the closure
+        let fields = self.fields.clone();
+        let width = self.width;
+        let height = self.height;
+
+        let solve_callback = Callback::from(move |_| {
+            let fields = fields.clone();
+            let swap_callback = swap_callback.clone();
+
+            // Calculate the solving swap sequence only when the button is
+            // clicked, not on every re-render
+            let solve_sequence = find_swap_order(&fields, width, height);
+            log::info!("Solve sequence: {:?}", &solve_sequence);
+
+            for (i, swap) in solve_sequence.into_iter().enumerate() {
+                let swap_callback = swap_callback.clone();
+                let timeout = gloo_timers::callback::Timeout::new((i * 500) as u32, move || {
+                    swap_callback.emit((swap.0, swap.1));
+                });
+                timeout.forget();
+            }
+        });
+        solve_callback
     }
 }
