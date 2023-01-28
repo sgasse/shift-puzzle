@@ -1,8 +1,9 @@
-use rand::seq::SliceRandom;
-use web_sys::{TouchEvent, TouchList};
-use yew::prelude::*;
+mod utils;
+pub use utils::*;
 
-use crate::slide_puzzle::TouchMoveDirection;
+use rand::seq::SliceRandom;
+use web_sys::TouchEvent;
+use yew::prelude::*;
 
 #[derive(Properties, PartialEq)]
 pub struct PuzzleBoardProps {
@@ -203,6 +204,47 @@ pub fn trigger_field(
     false
 }
 
+pub enum TouchMoveDirection {
+    Left,
+    Right,
+    Up,
+    Down,
+}
+
+pub fn get_touch_direction(
+    x_start: i32,
+    y_start: i32,
+    x_end: i32,
+    y_end: i32,
+) -> Option<TouchMoveDirection> {
+    let d_x = x_end - x_start;
+    let d_y = y_end - y_start;
+
+    if d_x.abs() + d_y.abs() < 40 {
+        // Overall displacement is too small, ignore
+        return None;
+    }
+
+    match d_x.abs() > d_y.abs() {
+        true => {
+            // Horizontal
+            if d_x > 0 {
+                return Some(TouchMoveDirection::Right);
+            } else {
+                return Some(TouchMoveDirection::Left);
+            }
+        }
+        false => {
+            // Vertical
+            if d_y > 0 {
+                return Some(TouchMoveDirection::Down);
+            } else {
+                return Some(TouchMoveDirection::Up);
+            }
+        }
+    }
+}
+
 pub fn touch_move(
     fields: &mut Vec<u8>,
     width: usize,
@@ -291,59 +333,4 @@ pub fn get_swappable_neighbours(width: usize, height: usize, empty_field_idx: us
             }
         })
         .collect()
-}
-
-/// Determine the index of the empty field (`u8::MAX`) in a vector of fields.
-pub fn get_empty_field_idx(fields: &Vec<u8>) -> usize {
-    for (idx, &value) in fields.iter().enumerate() {
-        if value == u8::MAX {
-            return idx;
-        }
-    }
-
-    panic!("Could not find empty field!");
-}
-
-/// Get the left/top coordinates based on the index of a board field.
-fn get_left_top(idx: usize, width: usize, unit_size: usize) -> (usize, usize) {
-    let (row, col): (usize, usize) = get_row_col_from_idx(idx, width);
-    let left = col * unit_size;
-    let top = row * unit_size;
-
-    (left, top)
-}
-
-/// Get the row/column coordinates for a linear array representing a board.
-fn get_row_col_from_idx<T, U>(idx: T, width: T) -> (U, U)
-where
-    T: std::ops::Div<Output = T>,
-    T: std::ops::Rem<Output = T>,
-    T: Copy,
-    U: std::convert::From<T>,
-{
-    let row = idx / width;
-    let col = idx % width;
-
-    (row.into(), col.into())
-}
-
-/// Get the index into a linear array based on row/column coordinates.
-fn get_idx_from_row_col<T, U>(row: T, col: T, width: T) -> U
-where
-    T: std::ops::Mul<Output = T>,
-    T: std::ops::Add<Output = T>,
-    U: std::convert::From<T>,
-{
-    row.mul(width).add(col).into()
-}
-
-/// Check if row/column coordinates are within a field defined by width/height.
-fn in_bounds<T, U>(row: T, col: T, width: U, height: U) -> bool
-where
-    T: PartialOrd<T>,
-    T: PartialOrd<U>,
-    T: Default,
-{
-    let t_zero: T = T::default();
-    t_zero <= row && row < height && t_zero <= col && col < width
 }
