@@ -47,81 +47,15 @@ pub fn puzzle_board(
     // Callback to concatenate a size value with the given unit
     let as_unit = |value: usize| format!("{}{}", value, field_unit);
 
-    // Enumerate values and sort by fields. This is required so that every
-    // field shows up at the same list index in the DOM regardless of its left/
-    // right value. Otherwise, elements would be recreated and the animation
-    // state lost.
-    let mut indexes_fields: Vec<_> = fields.into_iter().enumerate().collect();
-    indexes_fields.sort_by(|a, b| b.1.cmp(&a.1));
-
-    let fields_html: Html = indexes_fields
-        .into_iter()
-        .map(|(idx, &field)| {
-            let on_field_click = {
-                let on_click = on_click.clone();
-                Callback::from(move |_| {
-                    log::info!("Clicked on field with index {}", idx);
-                    on_click.emit(idx);
-                })
-            };
-            let bg_string = format!(
-                "background-size: {} {}; \
-                 background-image: url({});",
-                as_unit(width * field_size),
-                as_unit(height * field_size),
-                background_url
-            );
-            let (left_pos, top_pos) = get_left_top(idx, *width, *field_size);
-            let (left_img, top_img) = get_left_top(field as usize, *width, *field_size);
-
-            let field_props = match field {
-                u8::MAX => FieldProps {
-                    left_pos,
-                    top_pos,
-                    img_pos_x: 0,
-                    img_pos_y: 0,
-                    class: "empty-field",
-                    name: "".to_owned(),
-                    bg_str: "".to_owned(),
-                },
-                _ => FieldProps {
-                    left_pos,
-                    top_pos,
-                    img_pos_x: width * field_size - left_img,
-                    img_pos_y: height * field_size - top_img,
-                    class: "field",
-                    name: format!("{}", field),
-                    bg_str: bg_string,
-                },
-            };
-
-            html! {
-                <div
-                    key={field}
-                    class={field_props.class}
-                    style={format!("left: {}; \
-                                    top: {}; \
-                                    width: {}; \
-                                    height: {}; \
-                                    position: absolute; \
-                                    transition: all 0.2s; \
-                                    background-position: {} {}; \
-                                    {}",
-                                    as_unit(field_props.left_pos),
-                                    as_unit(field_props.top_pos),
-                                    as_unit(*field_size),
-                                    as_unit(*field_size),
-                                    as_unit(field_props.img_pos_x),
-                                    as_unit(field_props.img_pos_y),
-                                    field_props.bg_str)}
-                    onclick={on_field_click}
-                >
-                    // Maybe optionally display field index?
-                    // {field_props.name}
-                </div>
-            }
-        })
-        .collect();
+    let fields_html = get_fields_html(
+        fields,
+        *width,
+        *height,
+        *field_size,
+        background_url.clone(),
+        on_click,
+        &as_unit,
+    );
 
     let on_touch_start = on_touch_start.clone();
     let on_touch_start = Callback::from(move |event: TouchEvent| {
@@ -155,21 +89,107 @@ pub fn puzzle_board(
     }
 }
 
+fn get_fields_html<F>(
+    fields: &Vec<u8>,
+    width: usize,
+    height: usize,
+    field_size: usize,
+    background_url: String,
+    on_click: Callback<usize>,
+    as_unit: F,
+) -> Html
+where
+    F: Fn(usize) -> String,
+{
+    // Enumerate values and sort by fields. This is required so that every
+    // field shows up at the same list index in the DOM regardless of its left/
+    // right value. Otherwise, elements would be recreated and the animation
+    // state lost.
+    let mut indexes_fields: Vec<_> = fields.clone().into_iter().enumerate().collect();
+    indexes_fields.sort_by(|a, b| b.1.cmp(&a.1));
+
+    indexes_fields
+        .into_iter()
+        .map(|(idx, field)| {
+            let (left_pos, top_pos) = get_left_top(idx, width, field_size);
+
+            if field == u8::MAX {
+                // Handle empty field specifically
+                return html! {
+                    <div
+                        key={field}
+                        class={"empty-field"}
+                        style={format!("left: {}; \
+                                        top: {}; \
+                                        width: {}; \
+                                        height: {}; \
+                                        position: absolute; \
+                                        transition: all 0.2s;",
+                                        as_unit(left_pos),
+                                        as_unit(top_pos),
+                                        as_unit(field_size),
+                                        as_unit(field_size))}
+                    >
+                        // Maybe optionally display field index?
+                        // {name}
+                    </div>
+                };
+            }
+
+            // Set, style and align background image
+            let (left_img, top_img) = get_left_top(field as usize, width, field_size);
+            let img_pos_x = width * field_size - left_img;
+            let img_pos_y = height * field_size - top_img;
+            let bg_string = format!(
+                "background-size: {} {}; \
+             background-image: url({});",
+                as_unit(width * field_size),
+                as_unit(height * field_size),
+                background_url
+            );
+
+            let on_field_click = {
+                let on_click = on_click.clone();
+                Callback::from(move |_| {
+                    log::info!("Clicked on field with index {}", idx);
+                    on_click.emit(idx);
+                })
+            };
+
+            return html! {
+                <div
+                    key={field}
+                    class={"field"}
+                    style={format!("left: {}; \
+                                    top: {}; \
+                                    width: {}; \
+                                    height: {}; \
+                                    position: absolute; \
+                                    transition: all 0.2s; \
+                                    background-position: {} {}; \
+                                    {}",
+                                    as_unit(left_pos),
+                                    as_unit(top_pos),
+                                    as_unit(field_size),
+                                    as_unit(field_size),
+                                    as_unit(img_pos_x),
+                                    as_unit(img_pos_y),
+                                    bg_string)}
+                    onclick={on_field_click}
+                >
+                    // Maybe optionally display field index?
+                    // {name}
+                </div>
+            };
+        })
+        .collect()
+}
+
 pub fn initialize_fields(num_elements: usize) -> Vec<u8> {
     let num_elements = usize::min(num_elements, u8::MAX as usize) as u8;
     let mut fields: Vec<_> = (0..(num_elements - 1)).into_iter().collect();
     fields.push(u8::MAX);
     fields
-}
-
-struct FieldProps {
-    left_pos: usize,
-    top_pos: usize,
-    img_pos_x: usize,
-    img_pos_y: usize,
-    class: &'static str,
-    name: String,
-    bg_str: String,
 }
 
 /// Get a sequence of valid semi-random shuffles.
