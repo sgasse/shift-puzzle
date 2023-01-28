@@ -2,6 +2,8 @@ use rand::seq::SliceRandom;
 use web_sys::{TouchEvent, TouchList};
 use yew::prelude::*;
 
+use crate::slide_puzzle::TouchMoveDirection;
+
 #[derive(Properties, PartialEq)]
 pub struct PuzzleBoardProps {
     pub fields: Vec<u8>,
@@ -119,20 +121,16 @@ pub fn puzzle_board(
 
     let on_touch_start = on_touch_start.clone();
     let on_touch_start = Callback::from(move |event: TouchEvent| {
-        log::info!("Received TouchStart");
         if let Some(touch) = event.changed_touches().get(0) {
             let coords = (touch.client_x(), touch.client_y());
-            log::info!("Coords: {coords:?}");
             on_touch_start.emit(coords);
         }
     });
 
     let on_touch_end = on_touch_end.clone();
     let on_touch_end = Callback::from(move |event: TouchEvent| {
-        log::info!("Received TouchEnd");
         if let Some(touch) = event.changed_touches().get(0) {
             let coords = (touch.client_x(), touch.client_y());
-            log::info!("Coords: {coords:?}");
             on_touch_end.emit(coords);
         }
     });
@@ -202,6 +200,37 @@ pub fn trigger_field(
     }
 
     // No field swapped - do not re-render
+    false
+}
+
+pub fn touch_move(
+    fields: &mut Vec<u8>,
+    width: usize,
+    height: usize,
+    direction: TouchMoveDirection,
+) -> bool {
+    let empty_field_idx = get_empty_field_idx(fields);
+    let (empty_row, empty_col): (usize, usize) = get_row_col_from_idx(empty_field_idx, width);
+    let (empty_row, empty_col) = (empty_row as i32, empty_col as i32);
+
+    let (d_row, d_col) = match direction {
+        // If the slide was to the left, the user wants to move the neighbour
+        // on the *right* towards the left.
+        TouchMoveDirection::Left => (0, 1),
+        TouchMoveDirection::Right => (0, -1),
+        TouchMoveDirection::Up => (1, 0),
+        TouchMoveDirection::Down => (-1, 0),
+    };
+
+    let (swap_row, swap_col) = (empty_row + d_row, empty_col + d_col);
+
+    if in_bounds(swap_row, swap_col, width as i32, height as i32) {
+        let swap_idx: i32 = get_idx_from_row_col(swap_row, swap_col, width as i32);
+        fields.swap(empty_field_idx, swap_idx as usize);
+        return true;
+    }
+
+    // The candidate was not in bounds -> do nothing
     false
 }
 
