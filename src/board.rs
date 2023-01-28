@@ -170,6 +170,7 @@ struct FieldProps {
     bg_str: String,
 }
 
+/// Trigger a field by swapping it with the empty field if it is adjacent.
 pub fn trigger_field(
     fields: &mut Vec<u8>,
     width: usize,
@@ -204,6 +205,10 @@ pub fn trigger_field(
     false
 }
 
+/// Get a sequence of valid semi-random shuffles.
+///
+/// We prevent fields from being shuffled back and forth, which breaks total
+/// randomness.
 pub fn get_shuffle_sequence(
     width: usize,
     height: usize,
@@ -233,6 +238,7 @@ pub fn get_shuffle_sequence(
     swaps
 }
 
+/// Get the indices of neighbours that can be swapped with the empty field.
 pub fn get_swappable_neighbours(width: usize, height: usize, empty_field_idx: usize) -> Vec<usize> {
     let (row, col): (usize, usize) = get_row_col_from_idx(empty_field_idx, width);
 
@@ -258,6 +264,7 @@ pub fn get_swappable_neighbours(width: usize, height: usize, empty_field_idx: us
         .collect()
 }
 
+/// Determine the index of the empty field (`u8::MAX`) in a vector of fields.
 pub fn get_empty_field_idx(fields: &Vec<u8>) -> usize {
     for (idx, &value) in fields.iter().enumerate() {
         if value == u8::MAX {
@@ -268,6 +275,7 @@ pub fn get_empty_field_idx(fields: &Vec<u8>) -> usize {
     panic!("Could not find empty field!");
 }
 
+/// Get the left/top coordinates based on the index of a board field.
 fn get_left_top(idx: usize, width: usize, unit_size: usize) -> (usize, usize) {
     let (row, col): (usize, usize) = get_row_col_from_idx(idx, width);
     let left = col * unit_size;
@@ -276,6 +284,7 @@ fn get_left_top(idx: usize, width: usize, unit_size: usize) -> (usize, usize) {
     (left, top)
 }
 
+/// Get the row/column coordinates for a linear array representing a board.
 fn get_row_col_from_idx<T, U>(idx: T, width: T) -> (U, U)
 where
     T: std::ops::Div<Output = T>,
@@ -289,6 +298,7 @@ where
     (row.into(), col.into())
 }
 
+/// Get the index into a linear array based on row/column coordinates.
 fn get_idx_from_row_col<T, U>(row: T, col: T, width: T) -> U
 where
     T: std::ops::Mul<Output = T>,
@@ -298,6 +308,7 @@ where
     row.mul(width).add(col).into()
 }
 
+/// Check if row/column coordinates are within a field defined by width/height.
 fn in_bounds<T, U>(row: T, col: T, width: U, height: U) -> bool
 where
     T: PartialOrd<T>,
