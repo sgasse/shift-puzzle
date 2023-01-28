@@ -1,5 +1,6 @@
-use crate::board::{get_empty_field_idx, get_swappable_neighbours, initialize_fields};
 use std::collections::{HashMap, VecDeque};
+
+use crate::board::{get_empty_field_idx, get_swappable_neighbours, initialize_fields};
 
 pub trait AsStringHash<T> {
     fn as_string_hash(&self) -> String;

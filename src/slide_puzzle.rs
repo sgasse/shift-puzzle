@@ -1,11 +1,14 @@
-use crate::board::{
-    get_empty_field_idx, get_shuffle_sequence, get_touch_direction, handle_field_click,
-    handle_touch_move, initialize_fields, PuzzleBoard,
-};
-use crate::expander::Expander;
-use crate::settings::SettingsBlock;
-use crate::solver::find_swap_order;
 use yew::prelude::*;
+
+use crate::{
+    board::{
+        get_empty_field_idx, get_shuffle_sequence, get_touch_direction, handle_field_click,
+        handle_touch_move, initialize_fields, PuzzleBoard,
+    },
+    expander::Expander,
+    settings::SettingsBlock,
+    solver::find_swap_order,
+};
 
 #[derive(Debug)]
 pub enum SlidePuzzleMsg {
