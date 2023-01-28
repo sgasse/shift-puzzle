@@ -1,5 +1,6 @@
 use crate::board::{
-    get_empty_field_idx, get_shuffle_sequence, initialize_fields, trigger_field, PuzzleBoard,
+    get_empty_field_idx, get_shuffle_sequence, initialize_fields, touch_move, trigger_field,
+    PuzzleBoard,
 };
 use crate::expander::Expander;
 use crate::settings::SettingsBlock;
@@ -49,7 +50,7 @@ impl Component for SlidePuzzle {
         }
     }
 
-    fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
+    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         log::info!("Received message {:?}", msg);
         match msg {
             SlidePuzzleMsg::Swap((a, b)) => match a != b {
@@ -99,14 +100,17 @@ impl Component for SlidePuzzle {
                 }
                 None => {
                     self.touch_start_coords = Some((x, y));
-                    log::info!("Updated touchStart coordinates");
                     false
                 }
             },
             SlidePuzzleMsg::TouchEndCoords((x_end, y_end)) => match self.touch_start_coords {
                 Some((x_start, y_start)) => {
-                    log::info!("Should handle touch event");
-                    self.touch_start_coords = None;
+                    if let Some(direction) = get_touch_direction(x_start, y_start, x_end, y_end) {
+                        let should_rerender =
+                            touch_move(&mut self.fields, self.width, self.height, direction);
+                        self.touch_start_coords = None;
+                        return should_rerender;
+                    }
                     false
                 }
                 None => {
@@ -271,5 +275,46 @@ impl SlidePuzzle {
             }
         });
         solve_callback
+    }
+}
+
+pub enum TouchMoveDirection {
+    Left,
+    Right,
+    Up,
+    Down,
+}
+
+fn get_touch_direction(
+    x_start: i32,
+    y_start: i32,
+    x_end: i32,
+    y_end: i32,
+) -> Option<TouchMoveDirection> {
+    let d_x = x_end - x_start;
+    let d_y = y_end - y_start;
+
+    if d_x.abs() + d_y.abs() < 40 {
+        // Overall displacement is too small, ignore
+        return None;
+    }
+
+    match d_x.abs() > d_y.abs() {
+        true => {
+            // Horizontal
+            if d_x > 0 {
+                return Some(TouchMoveDirection::Right);
+            } else {
+                return Some(TouchMoveDirection::Left);
+            }
+        }
+        false => {
+            // Vertical
+            if d_y > 0 {
+                return Some(TouchMoveDirection::Down);
+            } else {
+                return Some(TouchMoveDirection::Up);
+            }
+        }
     }
 }
