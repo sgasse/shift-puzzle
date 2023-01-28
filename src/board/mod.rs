@@ -77,7 +77,8 @@ pub fn puzzle_board(
             class="board"
             style={format!("width: {}; \
                             height: {}; \
-                            position: relative;",
+                            position: relative; \
+                            touch-action: none;",
                             as_unit(width*field_size),
                             as_unit(height*field_size))}
             ontouchstart={on_touch_start}
