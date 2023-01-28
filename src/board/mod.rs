@@ -2,9 +2,8 @@ mod utils;
 pub use utils::*;
 
 mod slide;
-pub use slide::*;
-
 use rand::seq::SliceRandom;
+pub use slide::*;
 use web_sys::TouchEvent;
 use yew::prelude::*;
 
