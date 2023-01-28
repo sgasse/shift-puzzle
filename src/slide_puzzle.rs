@@ -14,6 +14,8 @@ pub enum SlidePuzzleMsg {
     Swap((usize, usize)),
     ClickedField(usize),
     BackgroundUrlUpdate(String),
+    TouchStartCoords((i32, i32)),
+    TouchEndCoords((i32, i32)),
 }
 
 pub struct SlidePuzzle {
@@ -21,6 +23,7 @@ pub struct SlidePuzzle {
     width: usize,
     height: usize,
     background_url: String,
+    touch_start_coords: Option<(i32, i32)>,
 }
 
 #[derive(Properties, PartialEq)]
@@ -42,6 +45,7 @@ impl Component for SlidePuzzle {
             width: props.width,
             height: props.height,
             background_url: props.background_url.clone(),
+            touch_start_coords: None,
         }
     }
 
@@ -88,6 +92,28 @@ impl Component for SlidePuzzle {
                 }
                 false => false,
             },
+            SlidePuzzleMsg::TouchStartCoords((x, y)) => match self.touch_start_coords {
+                Some(_) => {
+                    log::warn!("Cannot overwrite existing touchStart coordinates");
+                    false
+                }
+                None => {
+                    self.touch_start_coords = Some((x, y));
+                    log::info!("Updated touchStart coordinates");
+                    false
+                }
+            },
+            SlidePuzzleMsg::TouchEndCoords((x_end, y_end)) => match self.touch_start_coords {
+                Some((x_start, y_start)) => {
+                    log::info!("Should handle touch event");
+                    self.touch_start_coords = None;
+                    false
+                }
+                None => {
+                    log::warn!("TouchEnd received without previous TouchStart");
+                    false
+                }
+            },
         }
     }
 
@@ -110,6 +136,12 @@ impl Component for SlidePuzzle {
         let bg_url_change_callback = ctx
             .link()
             .callback(move |bg_url: String| SlidePuzzleMsg::BackgroundUrlUpdate(bg_url));
+        let touch_start_callback = ctx
+            .link()
+            .callback(move |(x, y)| SlidePuzzleMsg::TouchStartCoords((x, y)));
+        let touch_end_callback = ctx
+            .link()
+            .callback(move |(x, y)| SlidePuzzleMsg::TouchEndCoords((x, y)));
 
         html! {
             <>
@@ -121,6 +153,8 @@ impl Component for SlidePuzzle {
                     field_size={4}
                     field_unit={"rem"}
                     background_url={self.background_url.clone()}
+                    on_touch_start={touch_start_callback}
+                    on_touch_end={touch_end_callback}
                 />
 
                 <button onclick={quick_swap_callback}>{"Shuffle Quick"}</button>

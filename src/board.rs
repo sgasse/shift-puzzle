@@ -1,4 +1,5 @@
 use rand::seq::SliceRandom;
+use web_sys::{TouchEvent, TouchList};
 use yew::prelude::*;
 
 #[derive(Properties, PartialEq)]
@@ -10,6 +11,8 @@ pub struct PuzzleBoardProps {
     pub field_unit: &'static str,
     pub background_url: String,
     pub on_click: Callback<usize>,
+    pub on_touch_start: Callback<(i32, i32)>,
+    pub on_touch_end: Callback<(i32, i32)>,
 }
 
 #[function_component(PuzzleBoard)]
@@ -20,8 +23,10 @@ pub fn puzzle_board(
         height,
         field_size,
         field_unit,
-        on_click,
         background_url,
+        on_click,
+        on_touch_start,
+        on_touch_end,
     }: &PuzzleBoardProps,
 ) -> Html {
     let on_click = on_click.clone();
@@ -112,6 +117,26 @@ pub fn puzzle_board(
         })
         .collect();
 
+    let on_touch_start = on_touch_start.clone();
+    let on_touch_start = Callback::from(move |event: TouchEvent| {
+        log::info!("Received TouchStart");
+        if let Some(touch) = event.changed_touches().get(0) {
+            let coords = (touch.client_x(), touch.client_y());
+            log::info!("Coords: {coords:?}");
+            on_touch_start.emit(coords);
+        }
+    });
+
+    let on_touch_end = on_touch_end.clone();
+    let on_touch_end = Callback::from(move |event: TouchEvent| {
+        log::info!("Received TouchEnd");
+        if let Some(touch) = event.changed_touches().get(0) {
+            let coords = (touch.client_x(), touch.client_y());
+            log::info!("Coords: {coords:?}");
+            on_touch_end.emit(coords);
+        }
+    });
+
     html! {
         <div
             class="board"
@@ -120,6 +145,8 @@ pub fn puzzle_board(
                             position: relative;",
                             as_unit(width*field_size),
                             as_unit(height*field_size))}
+            ontouchstart={on_touch_start}
+            ontouchend={on_touch_end}
         >
             { fields_html }
         </div>
