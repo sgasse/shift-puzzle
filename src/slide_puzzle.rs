@@ -1,6 +1,6 @@
 use crate::board::{
-    get_empty_field_idx, get_shuffle_sequence, get_touch_direction, initialize_fields, touch_move,
-    trigger_field, PuzzleBoard,
+    get_empty_field_idx, get_shuffle_sequence, get_touch_direction, handle_field_click,
+    handle_touch_move, initialize_fields, PuzzleBoard,
 };
 use crate::expander::Expander;
 use crate::settings::SettingsBlock;
@@ -61,7 +61,7 @@ impl Component for SlidePuzzle {
                 false => false,
             },
             SlidePuzzleMsg::ClickedField(clicked_idx) => {
-                trigger_field(&mut self.fields, self.width, self.height, clicked_idx)
+                handle_field_click(&mut self.fields, self.width, self.height, clicked_idx)
             }
             SlidePuzzleMsg::WidthUpdate(width) => match width != self.width {
                 true => {
@@ -108,7 +108,7 @@ impl Component for SlidePuzzle {
                 Some((x_start, y_start)) => {
                     if let Some(direction) = get_touch_direction(x_start, y_start, x_end, y_end) {
                         let should_rerender =
-                            touch_move(&mut self.fields, self.width, self.height, direction);
+                            handle_touch_move(&mut self.fields, self.width, self.height, direction);
                         self.touch_start_coords = None;
                         return should_rerender;
                     }
