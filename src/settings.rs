@@ -38,7 +38,7 @@ pub fn settings_block(
                         <div class="settings-text">{ "Width" }</div>
                         <input
                             type="text"
-                            value={format!("{}", width)}
+                            value={format!("{width}")}
                             oninput={get_dimension_callback(width_callback.clone())}
                         />
                 </div>
@@ -46,7 +46,7 @@ pub fn settings_block(
                         <div class="settings-text">{ "Height" }</div>
                         <input
                             type="text"
-                            value={format!("{}", height)}
+                            value={format!("{height}")}
                             oninput={get_dimension_callback(height_callback.clone())}
                         />
                 </div>
