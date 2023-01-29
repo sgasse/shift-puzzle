@@ -2,6 +2,9 @@ name: Build and deploy to GH pages
 
 on:
   push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
 
 permissions:
   contents: write
@@ -16,9 +19,26 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
+      - name: Update local Rust toolchain
+        run: |
+          rustup update
+          rustup install nightly
+          rustup component add clippy rustfmt --toolchain nightly
+
+      - name: Get toolchain info
+        run: |
+          cargo --version --verbose
+          rustc --version
+          cargo clippy --version
+
       - name: Add WASM target
         run: |
           rustup target add wasm32-unknown-unknown
+
+      - name: Lint
+        run: |
+          cargo +nightly fmt -- --check
+          cargo +nightly clippy -- --no-deps -D warnings
 
       - name: Install trunk
         run: |
