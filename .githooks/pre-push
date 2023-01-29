@@ -1,0 +1,16 @@
+#!/bin/bash
+
+# This hook is called with the following parameters:
+#
+# $1 -- Name of the remote to which the push is being done
+# $2 -- URL to which the push is being done
+
+remote="$1"
+url="$2"
+
+set -e
+
+cargo +nightly fmt -- --check
+cargo +nightly clippy -- --no-deps -D warnings
+
+exit 0
