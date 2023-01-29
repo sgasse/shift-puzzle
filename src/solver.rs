@@ -22,9 +22,9 @@ where
 /// time we see it is guaranteed to be cycle-free since we traverse the graph
 /// in a FIFO order. Therefore, we do not store subsequent (longer) paths to
 /// states which we already know.
-pub fn find_swap_order(fields: &Vec<u8>, width: usize, height: usize) -> Vec<(usize, usize)> {
+pub fn find_swap_order(fields: &[u8], width: usize, height: usize) -> Vec<(usize, usize)> {
     // Determine initial values
-    let fields = fields.clone();
+    let fields = fields.to_owned();
     let initial_hash = fields.as_string_hash();
     let target_fields = initialize_fields(fields.len());
     let target_hash = target_fields.as_string_hash();
@@ -104,7 +104,7 @@ pub fn find_swap_order(fields: &Vec<u8>, width: usize, height: usize) -> Vec<(us
 
             let mut next_hash = target_hash;
             while let Some((parent_hash, swap)) = parent_map.get(&next_hash) {
-                swaps.push(swap.clone());
+                swaps.push(*swap);
                 if *parent_hash == initial_hash {
                     break;
                 }

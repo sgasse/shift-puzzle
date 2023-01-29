@@ -126,30 +126,17 @@ impl Component for SlidePuzzle {
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
-        let ctx = ctx.clone();
         let quick_swap_callback = self.get_quick_swap_callback(ctx);
         let granular_swap_callback = self.get_granular_swap_callback(ctx);
         let solve_callback = self.get_solve_callback(ctx);
 
-        let field_click_callback = ctx
-            .link()
-            .callback(move |clicked_idx: usize| SlidePuzzleMsg::ClickedField(clicked_idx));
+        let field_click_callback = ctx.link().callback(SlidePuzzleMsg::ClickedField);
 
-        let width_change_callback = ctx
-            .link()
-            .callback(move |width: usize| SlidePuzzleMsg::WidthUpdate(width));
-        let height_change_callback = ctx
-            .link()
-            .callback(move |height: usize| SlidePuzzleMsg::HeightUpdate(height));
-        let bg_url_change_callback = ctx
-            .link()
-            .callback(move |bg_url: String| SlidePuzzleMsg::BackgroundUrlUpdate(bg_url));
-        let touch_start_callback = ctx
-            .link()
-            .callback(move |(x, y)| SlidePuzzleMsg::TouchStartCoords((x, y)));
-        let touch_end_callback = ctx
-            .link()
-            .callback(move |(x, y)| SlidePuzzleMsg::TouchEndCoords((x, y)));
+        let width_change_callback = ctx.link().callback(SlidePuzzleMsg::WidthUpdate);
+        let height_change_callback = ctx.link().callback(SlidePuzzleMsg::HeightUpdate);
+        let bg_url_change_callback = ctx.link().callback(SlidePuzzleMsg::BackgroundUrlUpdate);
+        let touch_start_callback = ctx.link().callback(SlidePuzzleMsg::TouchStartCoords);
+        let touch_end_callback = ctx.link().callback(SlidePuzzleMsg::TouchEndCoords);
 
         html! {
             <>
@@ -192,9 +179,7 @@ impl SlidePuzzle {
     fn get_quick_swap_callback(&self, ctx: &Context<SlidePuzzle>) -> Callback<MouseEvent> {
         // Create a callback to send a fields message that can be passed into
         // closures
-        let swap_callback = ctx
-            .link()
-            .callback(move |fields: Vec<u8>| SlidePuzzleMsg::CompleteFieldsUpdate(fields));
+        let swap_callback = ctx.link().callback(SlidePuzzleMsg::CompleteFieldsUpdate);
 
         // Locally-bind values of self that we want to pass into the closure
         let fields = self.fields.clone();
@@ -202,7 +187,7 @@ impl SlidePuzzle {
         let width = self.width;
         let height = self.height;
 
-        let quick_swap_callback = Callback::from(move |_| {
+        Callback::from(move |_| {
             let mut fields = fields.clone();
             // Calculate a shuffle sequence only when the button is clicked, not
             // on every re-render
@@ -214,8 +199,7 @@ impl SlidePuzzle {
             }
 
             swap_callback.emit(fields);
-        });
-        quick_swap_callback
+        })
     }
 
     fn get_granular_swap_callback(&self, ctx: &Context<SlidePuzzle>) -> Callback<MouseEvent> {
@@ -230,7 +214,7 @@ impl SlidePuzzle {
         let width = self.width;
         let height = self.height;
 
-        let granular_swap_callback = Callback::from(move |_| {
+        Callback::from(move |_| {
             // Calculate a shuffle sequence only when the button is clicked, not
             // on every re-render
             let shuffle_sequence = get_shuffle_sequence(width, height, empty_field_idx, 20);
@@ -245,8 +229,7 @@ impl SlidePuzzle {
                 });
                 timeout.forget();
             }
-        });
-        granular_swap_callback
+        })
     }
 
     fn get_solve_callback(&self, ctx: &Context<SlidePuzzle>) -> Callback<MouseEvent> {
@@ -261,7 +244,7 @@ impl SlidePuzzle {
         let width = self.width;
         let height = self.height;
 
-        let solve_callback = Callback::from(move |_| {
+        Callback::from(move |_| {
             let fields = fields.clone();
             let swap_callback = swap_callback.clone();
 
@@ -277,7 +260,6 @@ impl SlidePuzzle {
                 });
                 timeout.forget();
             }
-        });
-        solve_callback
+        })
     }
 }

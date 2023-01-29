@@ -44,7 +44,7 @@ pub fn puzzle_board(
     );
 
     // Callback to concatenate a size value with the given unit
-    let as_unit = |value: usize| format!("{}{}", value, field_unit);
+    let as_unit = |value: usize| format!("{value}{field_unit}");
 
     let fields_html = get_fields_html(
         fields,
@@ -90,13 +90,13 @@ pub fn puzzle_board(
 }
 
 fn get_fields_html<F>(
-    fields: &Vec<u8>,
+    fields: &[u8],
     width: usize,
     height: usize,
     field_size: usize,
     background_url: String,
     on_click: Callback<usize>,
-    as_unit: F,
+    as_unit: &F,
 ) -> Html
 where
     F: Fn(usize) -> String,
@@ -105,7 +105,7 @@ where
     // field shows up at the same list index in the DOM regardless of its left/
     // right value. Otherwise, elements would be recreated and the animation
     // state lost.
-    let mut indexes_fields: Vec<_> = fields.clone().into_iter().enumerate().collect();
+    let mut indexes_fields: Vec<_> = fields.iter().copied().enumerate().collect();
     indexes_fields.sort_by(|a, b| b.1.cmp(&a.1));
 
     indexes_fields
@@ -156,7 +156,7 @@ where
                 })
             };
 
-            return html! {
+            html! {
                 <div
                     key={field}
                     class={"field"}
@@ -180,14 +180,14 @@ where
                     // Maybe optionally display field index?
                     // {name}
                 </div>
-            };
+            }
         })
         .collect()
 }
 
 pub fn initialize_fields(num_elements: usize) -> Vec<u8> {
     let num_elements = usize::min(num_elements, u8::MAX as usize) as u8;
-    let mut fields: Vec<_> = (0..(num_elements - 1)).into_iter().collect();
+    let mut fields: Vec<_> = (0..(num_elements - 1)).collect();
     fields.push(u8::MAX);
     fields
 }

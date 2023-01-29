@@ -1,5 +1,5 @@
-/// Determine the index of the empty field (`u8::MAX`) in a vector of fields.
-pub fn get_empty_field_idx(fields: &Vec<u8>) -> usize {
+/// Determine the index of the empty field (`u8::MAX`) in a slice of fields.
+pub fn get_empty_field_idx(fields: &[u8]) -> usize {
     for (idx, &value) in fields.iter().enumerate() {
         if value == u8::MAX {
             return idx;

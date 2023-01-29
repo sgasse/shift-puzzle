@@ -9,7 +9,7 @@ pub enum TouchMoveDirection {
 
 /// Trigger a field by swapping it with the empty field if it is adjacent.
 pub fn handle_field_click(
-    fields: &mut Vec<u8>,
+    fields: &mut [u8],
     width: usize,
     height: usize,
     clicked_idx: usize,
@@ -60,24 +60,24 @@ pub fn get_touch_direction(
         true => {
             // Horizontal
             if d_x > 0 {
-                return Some(TouchMoveDirection::Right);
+                Some(TouchMoveDirection::Right)
             } else {
-                return Some(TouchMoveDirection::Left);
+                Some(TouchMoveDirection::Left)
             }
         }
         false => {
             // Vertical
             if d_y > 0 {
-                return Some(TouchMoveDirection::Down);
+                Some(TouchMoveDirection::Down)
             } else {
-                return Some(TouchMoveDirection::Up);
+                Some(TouchMoveDirection::Up)
             }
         }
     }
 }
 
 pub fn handle_touch_move(
-    fields: &mut Vec<u8>,
+    fields: &mut [u8],
     width: usize,
     height: usize,
     direction: TouchMoveDirection,
