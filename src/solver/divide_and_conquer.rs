@@ -1,8 +1,32 @@
 use std::collections::{HashMap, HashSet, VecDeque};
 
 use crate::board::{
-    get_coords_from_idx, get_empty_field_idx, get_idx_from_coords, in_bounds, Coords,
+    get_coords_from_idx, get_empty_field_idx, get_idx_from_coords, in_bounds, initialize_fields,
+    Coords,
 };
+
+pub fn solve_puzzle(fields: &[u8], width: usize, height: usize) -> Vec<(usize, usize)> {
+    let mut fields = fields.to_owned();
+    let goal_array = initialize_fields(width * height);
+
+    let mut swaps = Vec::new();
+
+    for i in 0..width - 2 {
+        if let (Some(field), Some(goal_field)) = (fields.get(i), goal_array.get(i)) {
+            if field != goal_field {
+                let iteration_swaps =
+                    compute_swaps_to_goal_pos(&fields, width, height, *goal_field);
+                for swap in iteration_swaps.iter() {
+                    fields.swap(swap.0, swap.1);
+                }
+
+                swaps.extend(iteration_swaps);
+            }
+        }
+    }
+
+    swaps
+}
 
 /// Move a field into its goal place.
 pub fn compute_swaps_to_goal_pos(
@@ -59,7 +83,7 @@ pub fn compute_swaps_to_goal_pos(
         // field position.
         let moves =
             compute_empty_field_moves(field_coords, target_coords, empty_field, width, height);
-        dbg!(&moves);
+        // dbg!(&moves);
 
         // Convert the moves to swaps
         let mut iteration_swaps = Vec::new();
@@ -74,7 +98,7 @@ pub fn compute_swaps_to_goal_pos(
         empty_idx = field_idx;
         field_idx = tmp;
         iteration_swaps.push((empty_idx as usize, field_idx as usize));
-        dbg!(&iteration_swaps);
+        // dbg!(&iteration_swaps);
 
         // Perform swaps to prepare next iteration
         for swap in iteration_swaps.iter() {

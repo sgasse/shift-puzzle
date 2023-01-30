@@ -7,7 +7,7 @@ use crate::{
     },
     expander::Expander,
     settings::SettingsBlock,
-    solver::optimal::find_swap_order,
+    solver::{divide_and_conquer::solve_puzzle, optimal::find_swap_order},
 };
 
 #[derive(Debug)]
@@ -128,7 +128,8 @@ impl Component for SlidePuzzle {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let quick_swap_callback = self.get_quick_swap_callback(ctx);
         let granular_swap_callback = self.get_granular_swap_callback(ctx);
-        let solve_callback = self.get_solve_callback(ctx);
+        let solve_callback = self.get_optimal_solve_callback(ctx);
+        let d_and_c_solve_callback = self.get_d_and_c_solve_callback(ctx);
 
         let field_click_callback = ctx.link().callback(SlidePuzzleMsg::ClickedField);
 
@@ -154,7 +155,8 @@ impl Component for SlidePuzzle {
 
                 <button onclick={quick_swap_callback}>{"Shuffle Quick"}</button>
                 <button onclick={granular_swap_callback}>{"Shuffle Granular"}</button>
-                <button onclick={solve_callback}>{"Solve"}</button>
+                <button onclick={solve_callback}>{"Solve optimally"}</button>
+                <button onclick={d_and_c_solve_callback}>{"Solve D and C"}</button>
 
                 <Expander title={"Settings"}>
                     <SettingsBlock
@@ -232,7 +234,7 @@ impl SlidePuzzle {
         })
     }
 
-    fn get_solve_callback(&self, ctx: &Context<SlidePuzzle>) -> Callback<MouseEvent> {
+    fn get_optimal_solve_callback(&self, ctx: &Context<SlidePuzzle>) -> Callback<MouseEvent> {
         // Create a callback to send a swap message that can be passed into
         // closures
         let swap_callback = ctx.link().callback(move |swap_pair: (usize, usize)| {
@@ -251,6 +253,37 @@ impl SlidePuzzle {
             // Calculate the solving swap sequence only when the button is
             // clicked, not on every re-render
             let solve_sequence = find_swap_order(&fields, width, height);
+            log::info!("Solve sequence: {:?}", &solve_sequence);
+
+            for (i, swap) in solve_sequence.into_iter().enumerate() {
+                let swap_callback = swap_callback.clone();
+                let timeout = gloo_timers::callback::Timeout::new((i * 500) as u32, move || {
+                    swap_callback.emit((swap.0, swap.1));
+                });
+                timeout.forget();
+            }
+        })
+    }
+
+    fn get_d_and_c_solve_callback(&self, ctx: &Context<SlidePuzzle>) -> Callback<MouseEvent> {
+        // Create a callback to send a swap message that can be passed into
+        // closures
+        let swap_callback = ctx.link().callback(move |swap_pair: (usize, usize)| {
+            SlidePuzzleMsg::Swap((swap_pair.0, swap_pair.1))
+        });
+
+        // Locally-bind values of self that we want to pass into the closure
+        let fields = self.fields.clone();
+        let width = self.width;
+        let height = self.height;
+
+        Callback::from(move |_| {
+            let fields = fields.clone();
+            let swap_callback = swap_callback.clone();
+
+            // Calculate the solving swap sequence only when the button is
+            // clicked, not on every re-render
+            let solve_sequence = solve_puzzle(&fields, width, height);
             log::info!("Solve sequence: {:?}", &solve_sequence);
 
             for (i, swap) in solve_sequence.into_iter().enumerate() {
