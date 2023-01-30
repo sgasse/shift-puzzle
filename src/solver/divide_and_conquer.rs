@@ -59,14 +59,56 @@ impl DacPuzzleSolver {
         }
 
         // Solve complicated part now
+        let field_goal_pos = Coords {
+            row: current_row,
+            col: self.width - 1,
+        };
+        let field_idx: i32 = get_idx_from_coords(field_goal_pos, self.width);
+        let field_value = *goal_array.get(field_idx as usize).expect("Field value");
+        let corner_swaps = self.get_corner_swaps_horizontally(field_value, field_goal_pos);
+        swaps.extend(corner_swaps);
 
         swaps
     }
 
-    fn get_corner_swaps_horizontally() {
+    fn get_corner_swaps_horizontally(
+        &mut self,
+        field_value: u8,
+        field_goal_pos: Coords<i32>,
+    ) -> Vec<(usize, usize)> {
         // Move last piece to place two rows below
+        let field_idx = self
+            .fields
+            .iter()
+            .position(|&v| v == field_value)
+            .expect("Field") as i32;
+        let goal_pos = Coords {
+            row: field_goal_pos.row + 2,
+            col: field_goal_pos.col,
+        };
+        let goal_idx = get_idx_from_coords(goal_pos, self.width);
+        let mut swaps = self.compute_swaps_to_goal_pos(field_idx, goal_idx);
+        let mut empty_idx = swaps.last().expect("Last").0 as i32;
+        let empty_field = get_coords_from_idx(empty_idx, self.width);
+
+        let empty_target_pos = Coords {
+            row: goal_pos.row - 1,
+            col: goal_pos.col,
+        };
+
         // Move empty field to one row below
+        let moves = self.compute_empty_field_moves(goal_pos, empty_target_pos, empty_field);
+        for step in moves {
+            let step_idx: i32 = get_idx_from_coords(step, self.width);
+            let swap = (empty_idx as usize, step_idx as usize);
+            empty_idx = step_idx;
+            swaps.push(swap);
+            self.fields.swap(swap.0, swap.1)
+        }
+
         // Do fixed swaps
+
+        swaps
     }
 
     /// Move a field given its index to a goal index.
@@ -232,15 +274,18 @@ fn identify_next_step_field_horiz_first(
         }
     }
 
-    // delta_coords.row cannot be larger than zero because it would be in the ordered
-    // block otherwise
-    assert!(delta_coords.row <= 0);
-
     if delta_coords.row != 0 {
-        return Coords {
-            row: field_coords.row - 1,
-            col: field_coords.col,
-        };
+        if delta_coords.row < 0 {
+            return Coords {
+                row: field_coords.row - 1,
+                col: field_coords.col,
+            };
+        } else {
+            return Coords {
+                row: field_coords.row + 1,
+                col: field_coords.col,
+            };
+        }
     } else {
         return Coords {
             row: field_coords.row,
@@ -255,8 +300,22 @@ mod test {
     use super::*;
 
     #[test]
-    fn test_move_first_in_place() {
+    fn test_first_field_correct_4_by_4() {
         let mut test_fields = vec![8, 5, 6, 1, 14, 4, 7, 2, 0, 13, 11, 9, 255, 12, 10, 3];
+
+        let mut solver = DacPuzzleSolver::new(&test_fields, 4, 4);
+        let swaps = solver.solve_puzzle();
+
+        for swap in swaps {
+            test_fields.swap(swap.0, swap.1);
+        }
+
+        assert_eq!(test_fields.get(0), Some(&0));
+    }
+
+    #[test]
+    fn test_second() {
+        let mut test_fields = vec![3, 2, 255, 6, 5, 0, 7, 1, 4];
 
         let mut solver = DacPuzzleSolver::new(&test_fields, 4, 4);
         let swaps = solver.solve_puzzle();
