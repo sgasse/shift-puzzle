@@ -54,6 +54,15 @@ where
     Coords { row, col }
 }
 
+pub fn get_idx_from_coords<T, U>(coords: Coords<T>, width: T) -> U
+where
+    T: std::ops::Mul<Output = T>,
+    T: std::ops::Add<Output = T>,
+    U: std::convert::From<T>,
+{
+    get_idx_from_row_col(coords.row, coords.col, width)
+}
+
 /// Check if row/column coordinates are within a field defined by width/height.
 pub fn in_bounds<T, U>(row: T, col: T, width: U, height: U) -> bool
 where
