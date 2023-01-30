@@ -7,7 +7,7 @@ use crate::{
     },
     expander::Expander,
     settings::SettingsBlock,
-    solver::{divide_and_conquer::solve_puzzle, optimal::find_swap_order},
+    solver::{divide_and_conquer::DacPuzzleSolver, optimal::find_swap_order},
 };
 
 #[derive(Debug)]
@@ -283,7 +283,8 @@ impl SlidePuzzle {
 
             // Calculate the solving swap sequence only when the button is
             // clicked, not on every re-render
-            let solve_sequence = solve_puzzle(&fields, width, height);
+            let mut solver = DacPuzzleSolver::new(&fields, width as i32, height as i32);
+            let solve_sequence = solver.solve_puzzle();
             log::info!("Solve sequence: {:?}", &solve_sequence);
 
             for (i, swap) in solve_sequence.into_iter().enumerate() {
