@@ -88,7 +88,7 @@ impl DacPuzzleSolver {
         };
         let goal_idx = get_idx_from_coords(goal_pos, self.width);
         let mut swaps = self.compute_swaps_to_goal_pos(field_idx, goal_idx);
-        let mut empty_idx = swaps.last().expect("Last").0 as i32;
+        let mut empty_idx = get_empty_field_idx(&self.fields) as i32;
         let empty_field = get_coords_from_idx(empty_idx, self.width);
 
         let empty_target_pos = Coords {
@@ -107,8 +107,73 @@ impl DacPuzzleSolver {
         }
 
         // Do fixed swaps
+        let moves = self.get_fixed_corner_moves_horizontally(empty_target_pos);
+        for step in moves {
+            let step_idx: i32 = get_idx_from_coords(step, self.width);
+            let swap = (empty_idx as usize, step_idx as usize);
+            empty_idx = step_idx;
+            swaps.push(swap);
+            self.fields.swap(swap.0, swap.1)
+        }
 
         swaps
+    }
+
+    fn get_fixed_corner_moves_horizontally(&self, empty_pos: Coords<i32>) -> Vec<Coords<i32>> {
+        // Assumes this setup e.g. for row 0:
+        // 0 1 2 X   0 1 2     0 1   2   0 1 X 2   0 1 X 2   0 1 X 2   0 1 X 2
+        // X X X     X X X X   X X X X   X X   X   X X X     X X X 3   X X X 3
+        // X X X 3   X X X 3   X X X 3   X X X 3   X X X 3   X X X     X X   X
+        // X X X X   X X X X   X X X X   X X X X   X X X X   X X X X   X X X X
+        //
+        //   ->
+        //
+        // 0 1 X 2   0 1   2   0 1 2     0 1 2 3
+        // X X   3   X X X 3   X X X 3   X X X
+        // X X X X   X X X X   X X X X   X X X X
+        // X X X X   X X X X   X X X X   X X X X
+        vec![
+            Coords {
+                row: empty_pos.row - 1,
+                col: empty_pos.col,
+            },
+            Coords {
+                row: empty_pos.row - 1,
+                col: empty_pos.col - 1,
+            },
+            Coords {
+                row: empty_pos.row,
+                col: empty_pos.col - 1,
+            },
+            Coords {
+                row: empty_pos.row,
+                col: empty_pos.col,
+            },
+            Coords {
+                row: empty_pos.row + 1,
+                col: empty_pos.col,
+            },
+            Coords {
+                row: empty_pos.row + 1,
+                col: empty_pos.col - 1,
+            },
+            Coords {
+                row: empty_pos.row,
+                col: empty_pos.col - 1,
+            },
+            Coords {
+                row: empty_pos.row - 1,
+                col: empty_pos.col - 1,
+            },
+            Coords {
+                row: empty_pos.row - 1,
+                col: empty_pos.col,
+            },
+            Coords {
+                row: empty_pos.row,
+                col: empty_pos.col,
+            },
+        ]
     }
 
     /// Move a field given its index to a goal index.
