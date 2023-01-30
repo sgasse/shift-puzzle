@@ -7,43 +7,53 @@ use crate::board::{
 
 pub fn solve_puzzle(fields: &[u8], width: usize, height: usize) -> Vec<(usize, usize)> {
     let mut fields = fields.to_owned();
+    assert_eq!(fields.len(), width * height);
+
     let goal_array = initialize_fields(width * height);
+
+    let width = width as i32;
+    let height = height as i32;
 
     let mut swaps = Vec::new();
 
     let mut forbidden_fields = HashSet::new();
 
-    assert_eq!(fields.len(), width * height);
-
     let mut current_row = 0;
     for col in 0..width - 1 {
         let cur_coords = Coords {
-            row: current_row as i32,
-            col: col as i32,
+            row: current_row,
+            col: col,
         };
-        let cur_idx: i32 = get_idx_from_coords(cur_coords, width as i32);
-
-        if let (Some(field), Some(goal_field)) = (
+        let cur_idx: i32 = get_idx_from_coords(cur_coords, width);
+        if let (Some(cur_field), Some(goal_field)) = (
             fields.get(cur_idx as usize),
             goal_array.get(cur_idx as usize),
         ) {
-            if field != goal_field {
+            if cur_field != goal_field {
+                let goal_idx = goal_array
+                    .iter()
+                    .position(|&v| v == *goal_field)
+                    .expect("Should have field") as i32;
+                let field_idx = fields
+                    .iter()
+                    .position(|&v| v == *goal_field)
+                    .expect("Field") as i32;
                 let iteration_swaps = compute_swaps_to_goal_pos(
                     &mut fields,
                     &forbidden_fields,
                     width,
                     height,
-                    *goal_field,
+                    field_idx,
+                    goal_idx,
                 );
-                // for swap in iteration_swaps.iter() {
-                //     fields.swap(swap.0, swap.1);
-                // }
 
                 swaps.extend(iteration_swaps);
             }
             forbidden_fields.insert(cur_coords);
         }
     }
+
+    // Solve complicated part now
 
     swaps
 }
@@ -52,29 +62,19 @@ pub fn solve_puzzle(fields: &[u8], width: usize, height: usize) -> Vec<(usize, u
 pub fn compute_swaps_to_goal_pos(
     fields: &mut [u8],
     forbidden_fields: &HashSet<Coords<i32>>,
-    width: usize,
-    height: usize,
-    field_value: u8,
+    width: i32,
+    height: i32,
+    mut field_idx: i32,
+    goal_idx: i32,
 ) -> Vec<(usize, usize)> {
-    let width = width as i32;
-    let height = height as i32;
-
-    let goal_array: Vec<u8> = (0..(fields.len() as u8 - 1)).into_iter().collect();
-    let g_idx = goal_array
-        .iter()
-        .position(|&v| v == field_value)
-        .expect("Should have field") as i32;
-    let goal_coords = get_coords_from_idx(g_idx, width);
+    // let goal_array: Vec<u8> = (0..(fields.len() as u8 - 1)).into_iter().collect();
+    let goal_pos = get_coords_from_idx(goal_idx, width);
 
     let mut swaps = Vec::new();
 
     // Determine initial indices. We will overwrite the values with every
     // iteration of the loop.
     let mut empty_idx = get_empty_field_idx(&fields) as i32;
-    let mut field_idx = fields
-        .iter()
-        .position(|&v| v == field_value)
-        .expect("Field") as i32;
 
     // Determine the next target on the way to the goal position for the field
     // which we are moving. One iteration of the loop moves the empty field to
@@ -86,8 +86,8 @@ pub fn compute_swaps_to_goal_pos(
         // Identify next target field between field to move and goal field
         // TODO: Abstract
         let delta_coords = Coords {
-            row: goal_coords.row - field_coords.row,
-            col: goal_coords.col - field_coords.col,
+            row: goal_pos.row - field_coords.row,
+            col: goal_pos.col - field_coords.col,
         };
 
         // Check if the field we are moving reached the goal field and return
@@ -109,7 +109,6 @@ pub fn compute_swaps_to_goal_pos(
             width,
             height,
         );
-        // dbg!(&moves);
 
         // Convert the moves to swaps
         let mut iteration_swaps = Vec::new();
@@ -124,7 +123,6 @@ pub fn compute_swaps_to_goal_pos(
         empty_idx = field_idx;
         field_idx = tmp;
         iteration_swaps.push((empty_idx as usize, field_idx as usize));
-        // dbg!(&iteration_swaps);
 
         // Perform swaps to prepare next iteration
         for swap in iteration_swaps.iter() {
@@ -133,42 +131,6 @@ pub fn compute_swaps_to_goal_pos(
 
         // Add swaps to overall swaps
         swaps.extend(iteration_swaps);
-    }
-}
-
-fn identify_next_step_field_horiz_first(
-    field_coords: Coords<i32>,
-    delta_coords: Coords<i32>,
-) -> Coords<i32> {
-    // Move horizontal first
-    if delta_coords.col != 0 {
-        if delta_coords.col < 0 {
-            return Coords {
-                row: field_coords.row,
-                col: field_coords.col - 1,
-            };
-        } else {
-            return Coords {
-                row: field_coords.row,
-                col: field_coords.col + 1,
-            };
-        }
-    }
-
-    // delta_coords.row cannot be larger than zero because it would be in the ordered
-    // block otherwise
-    assert!(delta_coords.row <= 0);
-
-    if delta_coords.row != 0 {
-        return Coords {
-            row: field_coords.row - 1,
-            col: field_coords.col,
-        };
-    } else {
-        return Coords {
-            row: field_coords.row,
-            col: field_coords.col,
-        };
     }
 }
 
@@ -251,6 +213,42 @@ fn compute_empty_field_moves(
     parents
 }
 
+fn identify_next_step_field_horiz_first(
+    field_coords: Coords<i32>,
+    delta_coords: Coords<i32>,
+) -> Coords<i32> {
+    // Move horizontal first
+    if delta_coords.col != 0 {
+        if delta_coords.col < 0 {
+            return Coords {
+                row: field_coords.row,
+                col: field_coords.col - 1,
+            };
+        } else {
+            return Coords {
+                row: field_coords.row,
+                col: field_coords.col + 1,
+            };
+        }
+    }
+
+    // delta_coords.row cannot be larger than zero because it would be in the ordered
+    // block otherwise
+    assert!(delta_coords.row <= 0);
+
+    if delta_coords.row != 0 {
+        return Coords {
+            row: field_coords.row - 1,
+            col: field_coords.col,
+        };
+    } else {
+        return Coords {
+            row: field_coords.row,
+            col: field_coords.col,
+        };
+    }
+}
+
 #[cfg(test)]
 mod test {
 
@@ -259,8 +257,17 @@ mod test {
     #[test]
     fn test_move_first_in_place() {
         let mut test_fields = vec![8, 5, 6, 1, 14, 4, 7, 2, 0, 13, 11, 9, 255, 12, 10, 3];
-        let mut forbidden_fields = HashSet::from([Coords { row: 0, col: 0 }]);
-        let swaps = compute_swaps_to_goal_pos(&mut test_fields, &forbidden_fields, 4, 4, 0);
+        let forbidden_fields = HashSet::from([Coords { row: 0, col: 0 }]);
+        let goal_idx = 0;
+        let field_idx = test_fields.iter().position(|&v| v == 0).expect("Field") as i32;
+        let swaps = compute_swaps_to_goal_pos(
+            &mut test_fields,
+            &forbidden_fields,
+            4,
+            4,
+            field_idx,
+            goal_idx,
+        );
 
         for swap in swaps {
             test_fields.swap(swap.0, swap.1);
