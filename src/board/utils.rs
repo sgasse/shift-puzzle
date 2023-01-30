@@ -1,12 +1,9 @@
 /// Determine the index of the empty field (`u8::MAX`) in a slice of fields.
 pub fn get_empty_field_idx(fields: &[u8]) -> usize {
-    for (idx, &value) in fields.iter().enumerate() {
-        if value == u8::MAX {
-            return idx;
-        }
-    }
-
-    panic!("Could not find empty field!");
+    fields
+        .iter()
+        .position(|&field| field == u8::MAX)
+        .expect("Should have empty field as u8::MAX")
 }
 
 /// Get the left/top coordinates based on the index of a board field.
@@ -19,17 +16,16 @@ pub fn get_left_top(idx: usize, width: usize, unit_size: usize) -> (usize, usize
 }
 
 /// Get the row/column coordinates for a linear array representing a board.
-pub fn get_row_col_from_idx<T, U>(idx: T, width: T) -> (U, U)
+pub fn get_row_col_from_idx<U>(idx: U, width: U) -> (U, U)
 where
-    T: std::ops::Div<Output = T>,
-    T: std::ops::Rem<Output = T>,
-    T: Copy,
-    U: std::convert::From<T>,
+    U: std::ops::Div<Output = U>,
+    U: std::ops::Rem<Output = U>,
+    U: Copy,
 {
     let row = idx / width;
     let col = idx % width;
 
-    (row.into(), col.into())
+    (row, col)
 }
 
 /// Get the index into a linear array based on row/column coordinates.
