@@ -7,7 +7,7 @@ use crate::{
     },
     expander::Expander,
     settings::SettingsBlock,
-    solver::find_swap_order,
+    solver::optimal::find_swap_order,
 };
 
 #[derive(Debug)]
