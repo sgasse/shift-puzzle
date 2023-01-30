@@ -1,12 +1,19 @@
 use std::collections::{HashMap, HashSet, VecDeque};
 
 use crate::board::{
-    get_coords_from_idx, get_empty_field_idx, get_row_col_from_idx, in_bounds, Coords,
+    get_coords_from_idx, get_empty_field_idx, get_idx_from_coords, in_bounds, Coords,
 };
 
-pub fn move_first_in_place(fields: &mut [u8], width: usize, height: usize, field_value: u8) {
+/// Move a field into its goal place.
+pub fn compute_swaps_to_goal_pos(
+    fields: &[u8],
+    width: usize,
+    height: usize,
+    field_value: u8,
+) -> Vec<(usize, usize)> {
     let width = width as i32;
     let height = height as i32;
+    let mut fields = fields.to_owned();
 
     let goal_array: Vec<u8> = (0..(fields.len() as u8 - 1)).into_iter().collect();
     let g_idx = goal_array
@@ -15,34 +22,67 @@ pub fn move_first_in_place(fields: &mut [u8], width: usize, height: usize, field
         .expect("Should have field") as i32;
     let goal_coords = get_coords_from_idx(g_idx, width);
 
+    let mut swaps = Vec::new();
+
+    // Determine initial indices. We will overwrite the values with every
+    // iteration of the loop.
     let mut empty_idx = get_empty_field_idx(&fields) as i32;
     let mut field_idx = fields
         .iter()
         .position(|&v| v == field_value)
         .expect("Field") as i32;
 
+    // Determine the next target on the way to the goal position for the field
+    // which we are moving. One iteration of the loop moves the empty field to
+    // this target and then swaps the field with the empty field.
     loop {
         let empty_field = get_coords_from_idx(empty_idx, width);
         let field_coords = get_coords_from_idx(field_idx, width);
 
-        // Identify next field between field to move and goal field
-        // For the upper row, move horizontal first
+        // Identify next target field between field to move and goal field
+        // TODO: Abstract
         let delta_coords = Coords {
             row: goal_coords.row - field_coords.row,
             col: goal_coords.col - field_coords.col,
         };
 
+        // Check if the field we are moving reached the goal field and return
+        // swaps if so.
+        if delta_coords == (Coords { row: 0, col: 0 }) {
+            return swaps;
+        }
+
+        // For the upper row, move horizontal first
         let target_coords = identify_next_step_field_horiz_first(field_coords, delta_coords);
 
+        // Compute the moves required to bring the empty field to the target
+        // field position.
         let moves =
             compute_empty_field_moves(field_coords, target_coords, empty_field, width, height);
-        dbg!(moves);
-        break;
+        dbg!(&moves);
 
-        // Move empty field to that field without touching the field to move
-        // or already fixed fields
+        // Convert the moves to swaps
+        let mut iteration_swaps = Vec::new();
+        for step in moves {
+            let step_idx: i32 = get_idx_from_coords(step, width);
+            let swap = (empty_idx as usize, step_idx as usize);
+            empty_idx = step_idx;
+            iteration_swaps.push(swap);
+        }
+        // Include swapping the empty field and the field we are moving
+        let tmp = empty_idx;
+        empty_idx = field_idx;
+        field_idx = tmp;
+        iteration_swaps.push((empty_idx as usize, field_idx as usize));
+        dbg!(&iteration_swaps);
 
-        // Move through swaps
+        // Perform swaps to prepare next iteration
+        for swap in iteration_swaps.iter() {
+            fields.swap(swap.0, swap.1);
+        }
+
+        // Add swaps to overall swaps
+        swaps.extend(iteration_swaps);
     }
 }
 
@@ -92,6 +132,7 @@ fn compute_empty_field_moves(
     width: i32,
     height: i32,
 ) -> Vec<Coords<i32>> {
+    // TODO: Move forbidden fields out
     let mut forbidden_fields = HashSet::new();
     forbidden_fields.insert(field);
 
@@ -154,6 +195,9 @@ fn compute_empty_field_moves(
         parents.push(cur_field);
     }
 
+    // Remove the empty field itself as move
+    parents.pop();
+
     // Reverse to start from the beginning and return
     parents.reverse();
     parents
@@ -166,7 +210,13 @@ mod test {
 
     #[test]
     fn test_move_first_in_place() {
-        let mut test_fields = vec![8, 5, 6, 1, 0, 14, 7, 2, 255, 4, 11, 9, 12, 13, 10, 3];
-        move_first_in_place(&mut test_fields, 4, 4, 0);
+        let mut test_fields = vec![8, 5, 6, 1, 14, 4, 7, 2, 0, 13, 11, 9, 255, 12, 10, 3];
+        let swaps = compute_swaps_to_goal_pos(&mut test_fields, 4, 4, 0);
+
+        for swap in swaps {
+            test_fields.swap(swap.0, swap.1);
+        }
+
+        assert_eq!(test_fields.get(0), Some(&0));
     }
 }
