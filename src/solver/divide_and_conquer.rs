@@ -77,6 +77,11 @@ impl DacPuzzleSolver {
         field_goal_pos: Coords<i32>,
     ) -> Vec<(usize, usize)> {
         // Move last piece to place two rows below
+
+        // May need a shortcut for a setting like this:
+        // 0 1
+        // X X 2
+        // X X X
         let field_idx = self
             .fields
             .iter()
@@ -107,7 +112,7 @@ impl DacPuzzleSolver {
         }
 
         // Do fixed swaps
-        let moves = self.get_fixed_corner_moves_horizontally(empty_target_pos);
+        let moves = get_fixed_corner_moves_horizontally(empty_target_pos);
         for step in moves {
             let step_idx: i32 = get_idx_from_coords(step, self.width);
             let swap = (empty_idx as usize, step_idx as usize);
@@ -117,63 +122,6 @@ impl DacPuzzleSolver {
         }
 
         swaps
-    }
-
-    fn get_fixed_corner_moves_horizontally(&self, empty_pos: Coords<i32>) -> Vec<Coords<i32>> {
-        // Assumes this setup e.g. for row 0:
-        // 0 1 2 X   0 1 2     0 1   2   0 1 X 2   0 1 X 2   0 1 X 2   0 1 X 2
-        // X X X     X X X X   X X X X   X X   X   X X X     X X X 3   X X X 3
-        // X X X 3   X X X 3   X X X 3   X X X 3   X X X 3   X X X     X X   X
-        // X X X X   X X X X   X X X X   X X X X   X X X X   X X X X   X X X X
-        //
-        //   ->
-        //
-        // 0 1 X 2   0 1   2   0 1 2     0 1 2 3
-        // X X   3   X X X 3   X X X 3   X X X
-        // X X X X   X X X X   X X X X   X X X X
-        // X X X X   X X X X   X X X X   X X X X
-        vec![
-            Coords {
-                row: empty_pos.row - 1,
-                col: empty_pos.col,
-            },
-            Coords {
-                row: empty_pos.row - 1,
-                col: empty_pos.col - 1,
-            },
-            Coords {
-                row: empty_pos.row,
-                col: empty_pos.col - 1,
-            },
-            Coords {
-                row: empty_pos.row,
-                col: empty_pos.col,
-            },
-            Coords {
-                row: empty_pos.row + 1,
-                col: empty_pos.col,
-            },
-            Coords {
-                row: empty_pos.row + 1,
-                col: empty_pos.col - 1,
-            },
-            Coords {
-                row: empty_pos.row,
-                col: empty_pos.col - 1,
-            },
-            Coords {
-                row: empty_pos.row - 1,
-                col: empty_pos.col - 1,
-            },
-            Coords {
-                row: empty_pos.row - 1,
-                col: empty_pos.col,
-            },
-            Coords {
-                row: empty_pos.row,
-                col: empty_pos.col,
-            },
-        ]
     }
 
     /// Move a field given its index to a goal index.
@@ -359,6 +307,63 @@ fn identify_next_step_field_horiz_first(
     }
 }
 
+fn get_fixed_corner_moves_horizontally(empty_pos: Coords<i32>) -> Vec<Coords<i32>> {
+    // Assumes this setup e.g. for row 0:
+    // 0 1 2 X   0 1 2     0 1   2   0 1 X 2   0 1 X 2   0 1 X 2   0 1 X 2
+    // X X X     X X X X   X X X X   X X   X   X X X     X X X 3   X X X 3
+    // X X X 3   X X X 3   X X X 3   X X X 3   X X X 3   X X X     X X   X
+    // X X X X   X X X X   X X X X   X X X X   X X X X   X X X X   X X X X
+    //
+    //   ->
+    //
+    // 0 1 X 2   0 1   2   0 1 2     0 1 2 3
+    // X X   3   X X X 3   X X X 3   X X X
+    // X X X X   X X X X   X X X X   X X X X
+    // X X X X   X X X X   X X X X   X X X X
+    vec![
+        Coords {
+            row: empty_pos.row - 1,
+            col: empty_pos.col,
+        },
+        Coords {
+            row: empty_pos.row - 1,
+            col: empty_pos.col - 1,
+        },
+        Coords {
+            row: empty_pos.row,
+            col: empty_pos.col - 1,
+        },
+        Coords {
+            row: empty_pos.row,
+            col: empty_pos.col,
+        },
+        Coords {
+            row: empty_pos.row + 1,
+            col: empty_pos.col,
+        },
+        Coords {
+            row: empty_pos.row + 1,
+            col: empty_pos.col - 1,
+        },
+        Coords {
+            row: empty_pos.row,
+            col: empty_pos.col - 1,
+        },
+        Coords {
+            row: empty_pos.row - 1,
+            col: empty_pos.col - 1,
+        },
+        Coords {
+            row: empty_pos.row - 1,
+            col: empty_pos.col,
+        },
+        Coords {
+            row: empty_pos.row,
+            col: empty_pos.col,
+        },
+    ]
+}
+
 #[cfg(test)]
 mod test {
 
@@ -380,9 +385,9 @@ mod test {
 
     #[test]
     fn test_second() {
-        let mut test_fields = vec![3, 2, 255, 6, 5, 0, 7, 1, 4];
+        let mut test_fields = vec![2, 1, 5, 3, 0, 7, 255, 6, 4];
 
-        let mut solver = DacPuzzleSolver::new(&test_fields, 4, 4);
+        let mut solver = DacPuzzleSolver::new(&test_fields, 3, 3);
         let swaps = solver.solve_puzzle();
 
         for swap in swaps {
