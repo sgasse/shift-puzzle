@@ -11,17 +11,37 @@ pub fn solve_puzzle(fields: &[u8], width: usize, height: usize) -> Vec<(usize, u
 
     let mut swaps = Vec::new();
 
-    for i in 0..width - 2 {
-        if let (Some(field), Some(goal_field)) = (fields.get(i), goal_array.get(i)) {
+    let mut forbidden_fields = HashSet::new();
+
+    assert_eq!(fields.len(), width * height);
+
+    let mut current_row = 0;
+    for col in 0..width - 1 {
+        let cur_coords = Coords {
+            row: current_row as i32,
+            col: col as i32,
+        };
+        let cur_idx: i32 = get_idx_from_coords(cur_coords, width as i32);
+
+        if let (Some(field), Some(goal_field)) = (
+            fields.get(cur_idx as usize),
+            goal_array.get(cur_idx as usize),
+        ) {
             if field != goal_field {
-                let iteration_swaps =
-                    compute_swaps_to_goal_pos(&fields, width, height, *goal_field);
-                for swap in iteration_swaps.iter() {
-                    fields.swap(swap.0, swap.1);
-                }
+                let iteration_swaps = compute_swaps_to_goal_pos(
+                    &mut fields,
+                    &forbidden_fields,
+                    width,
+                    height,
+                    *goal_field,
+                );
+                // for swap in iteration_swaps.iter() {
+                //     fields.swap(swap.0, swap.1);
+                // }
 
                 swaps.extend(iteration_swaps);
             }
+            forbidden_fields.insert(cur_coords);
         }
     }
 
@@ -30,14 +50,14 @@ pub fn solve_puzzle(fields: &[u8], width: usize, height: usize) -> Vec<(usize, u
 
 /// Move a field into its goal place.
 pub fn compute_swaps_to_goal_pos(
-    fields: &[u8],
+    fields: &mut [u8],
+    forbidden_fields: &HashSet<Coords<i32>>,
     width: usize,
     height: usize,
     field_value: u8,
 ) -> Vec<(usize, usize)> {
     let width = width as i32;
     let height = height as i32;
-    let mut fields = fields.to_owned();
 
     let goal_array: Vec<u8> = (0..(fields.len() as u8 - 1)).into_iter().collect();
     let g_idx = goal_array
@@ -81,8 +101,14 @@ pub fn compute_swaps_to_goal_pos(
 
         // Compute the moves required to bring the empty field to the target
         // field position.
-        let moves =
-            compute_empty_field_moves(field_coords, target_coords, empty_field, width, height);
+        let moves = compute_empty_field_moves(
+            field_coords,
+            &forbidden_fields,
+            target_coords,
+            empty_field,
+            width,
+            height,
+        );
         // dbg!(&moves);
 
         // Convert the moves to swaps
@@ -151,15 +177,12 @@ fn identify_next_step_field_horiz_first(
 /// Fields that may not be moved/touched are specified in `forbidden_fields`.
 fn compute_empty_field_moves(
     field: Coords<i32>,
+    forbidden_fields: &HashSet<Coords<i32>>,
     target_field: Coords<i32>,
     empty_field: Coords<i32>,
     width: i32,
     height: i32,
 ) -> Vec<Coords<i32>> {
-    // TODO: Move forbidden fields out
-    let mut forbidden_fields = HashSet::new();
-    forbidden_fields.insert(field);
-
     // Look-up of parents of fields. This enables us to trace back the path to
     // our empty field once we reach the target field.
     let mut parent_field = HashMap::new();
@@ -190,6 +213,7 @@ fn compute_empty_field_moves(
                     match in_bounds(neighbour.row, neighbour.col, width, height)
                         && !seen_neighbours.contains(&neighbour)
                         && !forbidden_fields.contains(&neighbour)
+                        && neighbour != field
                     {
                         true => Some(neighbour),
                         false => None,
@@ -235,7 +259,8 @@ mod test {
     #[test]
     fn test_move_first_in_place() {
         let mut test_fields = vec![8, 5, 6, 1, 14, 4, 7, 2, 0, 13, 11, 9, 255, 12, 10, 3];
-        let swaps = compute_swaps_to_goal_pos(&mut test_fields, 4, 4, 0);
+        let mut forbidden_fields = HashSet::from([Coords { row: 0, col: 0 }]);
+        let swaps = compute_swaps_to_goal_pos(&mut test_fields, &forbidden_fields, 4, 4, 0);
 
         for swap in swaps {
             test_fields.swap(swap.0, swap.1);
