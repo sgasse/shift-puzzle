@@ -9,7 +9,7 @@ pub struct DacPuzzleSolver {
     forbidden_fields: HashSet<Coords<i32>>,
     width: i32,
     height: i32,
-    empty_field_idx: i32,
+    empty_field_pos: Coords<i32>,
     swaps: Vec<(usize, usize)>,
     goal_array: Vec<u8>,
 }
@@ -25,13 +25,14 @@ impl DacPuzzleSolver {
 
         // TODO: Reject non-square and below 3x3
         let empty_field_idx = get_idx_of_val(fields, u8::MAX);
+        let empty_field_pos = get_coords_from_idx(empty_field_idx, width);
 
         Self {
             fields: fields.to_owned(),
             forbidden_fields: HashSet::new(),
             width,
             height,
-            empty_field_idx,
+            empty_field_pos,
             swaps: Vec::new(),
             goal_array: initialize_fields((width * height) as usize),
         }
@@ -118,14 +119,12 @@ impl DacPuzzleSolver {
     fn swap_field_to_goal_pos(&mut self, mut field_idx: i32, goal_idx: i32) {
         // let goal_array: Vec<u8> = (0..(fields.len() as u8 - 1)).into_iter().collect();
         let goal_pos = get_coords_from_idx(goal_idx, self.width);
+        let mut field_coords = get_coords_from_idx(field_idx, self.width);
 
         // Determine the next target on the way to the goal position for the field
         // which we are moving. One iteration of the loop moves the empty field to
         // this target and then swaps the field with the empty field.
         loop {
-            let empty_field = get_coords_from_idx(self.empty_field_idx, self.width);
-            let field_coords = get_coords_from_idx(field_idx, self.width);
-
             // Identify next target field between field to move and goal field
             // TODO: Abstract
             let delta_coords = Coords {
@@ -144,16 +143,14 @@ impl DacPuzzleSolver {
 
             // Compute the moves required to bring the empty field to the target
             // field position and apply them.
-            let moves = self.compute_empty_field_moves(field_coords, target_coords, empty_field);
+            let moves =
+                self.compute_empty_field_moves(field_coords, target_coords, self.empty_field_pos);
             self.apply_empty_field_moves_as_swaps(&moves);
 
             // Include swapping the empty field and the field we are moving
-            let swap = (self.empty_field_idx as usize, field_idx as usize);
-            self.fields.swap(swap.0, swap.1);
-            self.swaps.push(swap);
-            let tmp = self.empty_field_idx;
-            self.empty_field_idx = field_idx;
-            field_idx = tmp;
+            let tmp = self.empty_field_pos;
+            self.apply_empty_field_moves_as_swaps(&[field_coords]);
+            field_coords = tmp;
         }
     }
 
@@ -197,10 +194,7 @@ impl DacPuzzleSolver {
             }) == field_value
         {
             // Just swap the field into position and return
-            let swap = (self.empty_field_idx as usize, field_idx as usize);
-            self.fields.swap(swap.0, swap.1);
-            self.swaps.push(swap);
-            self.empty_field_idx = field_idx;
+            self.apply_empty_field_moves_as_swaps(&[empty_field_target_pos]);
             return;
         }
 
@@ -218,9 +212,9 @@ impl DacPuzzleSolver {
         // 0 1 X
         // X X
         // X X 2
-        let empty_field_pos = get_coords_from_idx(self.empty_field_idx, self.width);
+        // let empty_field_pos = get_coords_from_idx(self.empty_field_idx, self.width);
         let moves =
-            self.compute_empty_field_moves(goal_pos, empty_field_target_pos, empty_field_pos);
+            self.compute_empty_field_moves(goal_pos, empty_field_target_pos, self.empty_field_pos);
         self.apply_empty_field_moves_as_swaps(&moves);
 
         // Apply deterministic order of swaps from the state that we set up
@@ -312,14 +306,15 @@ impl DacPuzzleSolver {
     fn apply_empty_field_moves_as_swaps(&mut self, moves: &[Coords<i32>]) {
         for step in moves {
             let step_idx: i32 = get_idx_from_coords(*step, self.width);
+            let empty_field_idx: i32 = get_idx_from_coords(self.empty_field_pos, self.width);
 
             // Create and apply swap
-            let swap = (self.empty_field_idx as usize, step_idx as usize);
+            let swap = (empty_field_idx as usize, step_idx as usize);
             self.swaps.push(swap);
             self.fields.swap(swap.0, swap.1);
 
             // Update empty field index
-            self.empty_field_idx = step_idx;
+            self.empty_field_pos = *step;
         }
     }
 }
