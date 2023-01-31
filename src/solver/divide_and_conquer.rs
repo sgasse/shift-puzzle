@@ -1,3 +1,8 @@
+//! Divide and conquer puzzle solver
+//!
+//! See also:
+//! https://www.kopf.com.br/kaplof/how-to-solve-any-slide-puzzle-regardless-of-its-size/
+//!
 use std::collections::{HashMap, HashSet, VecDeque};
 
 use crate::board::{
