@@ -89,11 +89,7 @@ impl DacPuzzleSolver {
                     let cur_pos_value = self.get_field(cur_pos);
                     let cur_pos_goal_value = self.get_goal_value(cur_pos);
                     if cur_pos_value != cur_pos_goal_value {
-                        self.swap_corner_fields_to_goal_horizontally(
-                            cur_pos_goal_value,
-                            cur_pos,
-                            phase,
-                        );
+                        self.swap_corner_fields_to_goal(cur_pos_goal_value, cur_pos, phase);
                     }
 
                     // Prepare next iteration step
@@ -126,11 +122,7 @@ impl DacPuzzleSolver {
                     let cur_pos_value = self.get_field(cur_pos);
                     let cur_pos_goal_value = self.get_goal_value(cur_pos);
                     if cur_pos_value != cur_pos_goal_value {
-                        self.swap_corner_fields_to_goal_horizontally(
-                            cur_pos_goal_value,
-                            cur_pos,
-                            phase,
-                        );
+                        self.swap_corner_fields_to_goal(cur_pos_goal_value, cur_pos, phase);
                     }
 
                     // Prepare next iteration step
@@ -193,24 +185,59 @@ impl DacPuzzleSolver {
         *self.fields.get(idx as usize).expect("Index should exist")
     }
 
-    fn swap_corner_fields_to_goal_horizontally(
+    fn swap_corner_fields_to_goal(
         &mut self,
         field_value: u8,
         field_goal_pos: Coords<i32>,
         phase: SolverPhase,
     ) {
-        let goal_pos = Coords {
-            // The currently targeted field should end up two rows below its
-            // final goal position in the same column
-            row: field_goal_pos.row + 2,
-            col: field_goal_pos.col,
+        let (goal_pos, empty_field_target_pos) = match phase {
+            SolverPhase::Row => {
+                (
+                    Coords {
+                        // The currently targeted field should end up two rows below its
+                        // final goal position in the same column
+                        row: field_goal_pos.row + 2,
+                        col: field_goal_pos.col,
+                    },
+                    Coords {
+                        // The empty field should end up in the same column but one row
+                        // below the final goal position/one row above the goal position
+                        row: field_goal_pos.row + 1,
+                        col: field_goal_pos.col,
+                    },
+                )
+            }
+            SolverPhase::Column => {
+                (
+                    Coords {
+                        // The currently targeted field should end up two columns
+                        // to the right of the final goal position in the same row
+                        row: field_goal_pos.row,
+                        col: field_goal_pos.col + 2,
+                    },
+                    Coords {
+                        // The empty field should end up in the same row but one
+                        // column to the right of the final goal position/one column
+                        // to the left of the goal position.
+                        row: field_goal_pos.row,
+                        col: field_goal_pos.col + 1,
+                    },
+                )
+            }
         };
-        let empty_field_target_pos = Coords {
-            // The empty field should end up in the same column but one row
-            // below the final goal position/one row above the goal position
-            row: goal_pos.row - 1,
-            col: goal_pos.col,
-        };
+        // let goal_pos = Coords {
+        //     // The currently targeted field should end up two rows below its
+        //     // final goal position in the same column
+        //     row: field_goal_pos.row + 2,
+        //     col: field_goal_pos.col,
+        // };
+        // let empty_field_target_pos = Coords {
+        //     // The empty field should end up in the same column but one row
+        //     // below the final goal position/one row above the goal position
+        //     row: goal_pos.row - 1,
+        //     col: goal_pos.col,
+        // };
 
         let value_cur_pos = self.get_pos_of_val(field_value);
 
@@ -222,10 +249,7 @@ impl DacPuzzleSolver {
         // move the targeted field (2) or any of the already sorted fields (0
         // and 1). Thus, we have to check for and handle this case explicitly.
         if self.value_at_pos(field_goal_pos) == u8::MAX
-            && self.value_at_pos(Coords {
-                row: field_goal_pos.row + 1,
-                col: field_goal_pos.col,
-            }) == field_value
+            && self.value_at_pos(empty_field_target_pos) == field_value
         {
             // Just swap the field into position and return
             self.apply_empty_field_moves_as_swaps(&[empty_field_target_pos]);
@@ -255,7 +279,10 @@ impl DacPuzzleSolver {
         // 0 1 2
         // X X
         // X X X
-        let moves = get_fixed_corner_moves_horizontally(empty_field_target_pos);
+        let moves = match phase {
+            SolverPhase::Row => get_fixed_corner_moves_horizontally(empty_field_target_pos),
+            SolverPhase::Column => get_fixed_corner_moves_vertically(empty_field_target_pos),
+        };
         self.apply_empty_field_moves_as_swaps(&moves);
     }
 
