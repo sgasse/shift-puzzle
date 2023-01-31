@@ -56,69 +56,65 @@ impl DacPuzzleSolver {
         let mut working_col = 0;
 
         'row_col_loop: loop {
+            if self.width - working_col <= 2 || self.height - working_row <= 2 {
+                break 'row_col_loop;
+            }
+
             match phase {
                 SolverPhase::Row => {
+                    // Solve fields in the row starting at `working_col` until
+                    // the second last.
                     for col in working_col..self.width - 1 {
-                        let cur_coords = Coords {
+                        let cur_pos = Coords {
                             row: working_row,
                             col,
                         };
-                        let cur_field_value = self.get_field(cur_coords);
-                        let goal_field = self.get_goal_value(cur_coords);
-                        if cur_field_value != goal_field {
-                            let value_cur_coords = self.get_pos_of_val(goal_field);
-                            self.swap_field_to_goal_pos(value_cur_coords, cur_coords);
+                        let cur_pos_value = self.get_field(cur_pos);
+                        let cur_pos_goal_value = self.get_goal_value(cur_pos);
+                        if cur_pos_value != cur_pos_goal_value {
+                            let goal_value_pos = self.get_pos_of_val(cur_pos_goal_value);
+                            self.swap_field_to_goal_pos(goal_value_pos, cur_pos);
                         }
-                        self.forbidden_fields.insert(cur_coords);
+                        self.forbidden_fields.insert(cur_pos);
                     }
 
-                    // Solve corner part
-                    let cur_goal_pos = Coords {
+                    // Solve last field in the row
+                    let cur_pos = Coords {
                         row: working_row,
                         col: self.width - 1,
                     };
-                    let cur_field_idx: i32 = get_idx_from_coords(cur_goal_pos, self.width);
-                    let cur_field_value = *self
-                        .fields
-                        .get(cur_field_idx as usize)
-                        .expect("Field value");
-                    let cur_field_goal_value = *self
-                        .goal_array
-                        .get(cur_field_idx as usize)
-                        .expect("Field value");
 
                     // Only enter the blind routine if the field is not yet in place
-                    if cur_field_value != cur_field_goal_value {
-                        self.swap_corner_fields_to_goal_horizontally(
-                            cur_field_goal_value,
-                            cur_goal_pos,
-                        );
+                    let cur_pos_value = self.get_field(cur_pos);
+                    let cur_pos_goal_value = self.get_goal_value(cur_pos);
+                    if cur_pos_value != cur_pos_goal_value {
+                        self.swap_corner_fields_to_goal_horizontally(cur_pos_goal_value, cur_pos);
                     }
 
                     // Prepare next iteration step
                     working_row += 1;
-                    phase = match phase {
-                        SolverPhase::Row => SolverPhase::Column,
-                        SolverPhase::Column => SolverPhase::Row,
-                    };
 
                     // TODO: Remove
                     break 'row_col_loop;
                 }
                 SolverPhase::Column => {
                     // Nothing so far
+
+                    // Prepare next iteration step
+                    working_col += 1;
                 }
             }
+
+            phase = match phase {
+                SolverPhase::Row => SolverPhase::Column,
+                SolverPhase::Column => SolverPhase::Row,
+            };
         }
         self.swaps.clone()
     }
 
     /// Move a field given its index to a goal index.
-    fn swap_field_to_goal_pos(
-        &mut self,
-        mut value_cur_pos: Coords<i32>,
-        value_goal_pos: Coords<i32>,
-    ) {
+    fn swap_field_to_goal_pos(&mut self, mut goal_value_pos: Coords<i32>, goal_pos: Coords<i32>) {
         // Determine the next target on the way to the goal position for the field
         // which we are moving. One iteration of the loop moves the empty field to
         // this target and then swaps the field with the empty field.
@@ -126,8 +122,8 @@ impl DacPuzzleSolver {
             // Identify next target field between field to move and goal field
             // TODO: Abstract
             let delta_coords = Coords {
-                row: value_goal_pos.row - value_cur_pos.row,
-                col: value_goal_pos.col - value_cur_pos.col,
+                row: goal_pos.row - goal_value_pos.row,
+                col: goal_pos.col - goal_value_pos.col,
             };
 
             // Check if the field we are moving reached the goal field and return
@@ -137,18 +133,18 @@ impl DacPuzzleSolver {
             }
 
             // For the upper row, move horizontal first
-            let target_coords = identify_next_step_field_horiz_first(value_cur_pos, delta_coords);
+            let target_coords = identify_next_step_field_horiz_first(goal_value_pos, delta_coords);
 
             // Compute the moves required to bring the empty field to the target
             // field position and apply them.
             let moves =
-                self.compute_empty_field_moves(value_cur_pos, target_coords, self.empty_field_pos);
+                self.compute_empty_field_moves(goal_value_pos, target_coords, self.empty_field_pos);
             self.apply_empty_field_moves_as_swaps(&moves);
 
             // Include swapping the empty field and the field we are moving
             let tmp = self.empty_field_pos;
-            self.apply_empty_field_moves_as_swaps(&[value_cur_pos]);
-            value_cur_pos = tmp;
+            self.apply_empty_field_moves_as_swaps(&[goal_value_pos]);
+            goal_value_pos = tmp;
         }
     }
 
