@@ -87,8 +87,7 @@ impl DacPuzzleSolver {
         };
         let goal_idx = get_idx_from_coords(goal_pos, self.width);
         let mut swaps = self.compute_swaps_to_goal_pos(field_idx, goal_idx);
-        let mut empty_idx = get_empty_field_idx(&self.fields) as i32;
-        let empty_field = get_coords_from_idx(empty_idx, self.width);
+        let empty_field = get_coords_from_idx(self.empty_field_idx, self.width);
 
         let empty_target_pos = Coords {
             row: goal_pos.row - 1,
@@ -97,23 +96,11 @@ impl DacPuzzleSolver {
 
         // Move empty field to one row below
         let moves = self.compute_empty_field_moves(goal_pos, empty_target_pos, empty_field);
-        for step in moves {
-            let step_idx: i32 = get_idx_from_coords(step, self.width);
-            let swap = (empty_idx as usize, step_idx as usize);
-            empty_idx = step_idx;
-            swaps.push(swap);
-            self.fields.swap(swap.0, swap.1)
-        }
+        swaps.extend(self.apply_empty_field_moves(&moves));
 
         // Do fixed swaps
         let moves = get_fixed_corner_moves_horizontally(empty_target_pos);
-        for step in moves {
-            let step_idx: i32 = get_idx_from_coords(step, self.width);
-            let swap = (empty_idx as usize, step_idx as usize);
-            empty_idx = step_idx;
-            swaps.push(swap);
-            self.fields.swap(swap.0, swap.1)
-        }
+        swaps.extend(self.apply_empty_field_moves(&moves));
 
         swaps
     }
@@ -145,10 +132,6 @@ impl DacPuzzleSolver {
         let goal_pos = get_coords_from_idx(goal_idx, self.width);
 
         let mut swaps = Vec::new();
-
-        // Determine initial indices. We will overwrite the values with every
-        // iteration of the loop.
-        // let mut empty_idx = get_empty_field_idx(&self.fields) as i32;
 
         // Determine the next target on the way to the goal position for the field
         // which we are moving. One iteration of the loop moves the empty field to
@@ -186,7 +169,6 @@ impl DacPuzzleSolver {
             let tmp = self.empty_field_idx;
             self.empty_field_idx = field_idx;
             field_idx = tmp;
-            // iteration_swaps.push((empty_idx as usize, field_idx as usize));
         }
     }
 
