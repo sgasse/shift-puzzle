@@ -16,6 +16,8 @@ impl DacPuzzleSolver {
     pub fn new(fields: &[u8], width: i32, height: i32) -> Self {
         assert_eq!(fields.len() as i32, width * height);
 
+        // TODO: Reject non-square and below 3x3
+
         Self {
             fields: fields.to_owned(),
             forbidden_fields: HashSet::new(),
@@ -41,15 +43,8 @@ impl DacPuzzleSolver {
                 goal_array.get(cur_idx as usize),
             ) {
                 if cur_field != goal_field {
-                    let goal_idx = goal_array
-                        .iter()
-                        .position(|&v| v == *goal_field)
-                        .expect("Should have field") as i32;
-                    let field_idx = self
-                        .fields
-                        .iter()
-                        .position(|&v| v == *goal_field)
-                        .expect("Field") as i32;
+                    let goal_idx = get_idx_of_val(&goal_array, *goal_field);
+                    let field_idx = get_idx_of_val(&self.fields, *goal_field);
                     let iteration_swaps = self.compute_swaps_to_goal_pos(field_idx, goal_idx);
 
                     swaps.extend(iteration_swaps);
@@ -82,11 +77,7 @@ impl DacPuzzleSolver {
         // 0 1
         // X X 2
         // X X X
-        let field_idx = self
-            .fields
-            .iter()
-            .position(|&v| v == field_value)
-            .expect("Field") as i32;
+        let field_idx = get_idx_of_val(&self.fields, field_value);
         let goal_pos = Coords {
             row: field_goal_pos.row + 2,
             col: field_goal_pos.col,
@@ -305,6 +296,71 @@ fn identify_next_step_field_horiz_first(
             col: field_coords.col,
         };
     }
+}
+
+/// Get the index of a value in a slice.
+///
+/// This is a convenience wrapper and panics if the value cannot be found.
+fn get_idx_of_val(slice: &[u8], value: u8) -> i32 {
+    slice
+        .iter()
+        .position(|&v| v == value)
+        .expect("Expected to find value") as i32
+}
+
+fn get_fixed_corner_moves_vertically(empty_pos: Coords<i32>) -> Vec<Coords<i32>> {
+    // Assumes this setup e.g. for column 0:
+    //  0 1 2   0 1 2   0 1 2   0 1 2   0 1 2   0 1 2   0 1 2   0 1 2   0 1 2
+    //  3 X X   3 X X     X X   X   X   X X X   X X X   X X     X   X     X X
+    //  X   6     X 6   3 X 6   3 X 6   3   6   3 6     3 6 X   3 6 X   3 6 X
+    //
+    //   ->
+    //
+    // 0 1 2   0 1 2
+    // 3 X X   3 X X
+    //   6 X   6   X
+    vec![
+        Coords {
+            row: empty_pos.row,
+            col: empty_pos.col - 1,
+        },
+        Coords {
+            row: empty_pos.row - 1,
+            col: empty_pos.col - 1,
+        },
+        Coords {
+            row: empty_pos.row - 1,
+            col: empty_pos.col,
+        },
+        Coords {
+            row: empty_pos.row,
+            col: empty_pos.col,
+        },
+        Coords {
+            row: empty_pos.row,
+            col: empty_pos.col + 1,
+        },
+        Coords {
+            row: empty_pos.row - 1,
+            col: empty_pos.col + 1,
+        },
+        Coords {
+            row: empty_pos.row - 1,
+            col: empty_pos.col,
+        },
+        Coords {
+            row: empty_pos.row - 1,
+            col: empty_pos.col - 1,
+        },
+        Coords {
+            row: empty_pos.row,
+            col: empty_pos.col - 1,
+        },
+        Coords {
+            row: empty_pos.row,
+            col: empty_pos.col,
+        },
+    ]
 }
 
 fn get_fixed_corner_moves_horizontally(empty_pos: Coords<i32>) -> Vec<Coords<i32>> {
