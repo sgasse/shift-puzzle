@@ -14,6 +14,7 @@ pub struct DacPuzzleSolver {
     goal_array: Vec<u8>,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum SolverPhase {
     Row,
     Column,
@@ -73,7 +74,7 @@ impl DacPuzzleSolver {
                         let cur_pos_goal_value = self.get_goal_value(cur_pos);
                         if cur_pos_value != cur_pos_goal_value {
                             let goal_value_pos = self.get_pos_of_val(cur_pos_goal_value);
-                            self.swap_field_to_goal_pos(goal_value_pos, cur_pos);
+                            self.swap_field_to_goal_pos(goal_value_pos, cur_pos, phase);
                         }
                         self.forbidden_fields.insert(cur_pos);
                     }
@@ -88,7 +89,11 @@ impl DacPuzzleSolver {
                     let cur_pos_value = self.get_field(cur_pos);
                     let cur_pos_goal_value = self.get_goal_value(cur_pos);
                     if cur_pos_value != cur_pos_goal_value {
-                        self.swap_corner_fields_to_goal_horizontally(cur_pos_goal_value, cur_pos);
+                        self.swap_corner_fields_to_goal_horizontally(
+                            cur_pos_goal_value,
+                            cur_pos,
+                            phase,
+                        );
                     }
 
                     // Prepare next iteration step
@@ -98,8 +103,38 @@ impl DacPuzzleSolver {
                     break 'row_col_loop;
                 }
                 SolverPhase::Column => {
-                    // Nothing so far
+                    // Solve fields in the column starting at `working_row`
+                    // until the second last.
+                    for row in working_row..self.height - 1 {
+                        let cur_pos = Coords {
+                            row,
+                            col: working_col,
+                        };
+                        let cur_pos_value = self.get_field(cur_pos);
+                        let cur_pos_goal_value = self.get_goal_value(cur_pos);
+                        if cur_pos_value != cur_pos_goal_value {
+                            let goal_value_pos = self.get_pos_of_val(cur_pos_goal_value);
+                            self.swap_field_to_goal_pos(goal_value_pos, cur_pos, phase);
+                        }
+                        self.forbidden_fields.insert(cur_pos);
+                    }
 
+                    // Solve last field in the column
+                    let cur_pos = Coords {
+                        row: self.height - 1,
+                        col: working_col,
+                    };
+
+                    // Only enter the blind routine if the field is not yet in place
+                    let cur_pos_value = self.get_field(cur_pos);
+                    let cur_pos_goal_value = self.get_goal_value(cur_pos);
+                    if cur_pos_value != cur_pos_goal_value {
+                        self.swap_corner_fields_to_goal_horizontally(
+                            cur_pos_goal_value,
+                            cur_pos,
+                            phase,
+                        );
+                    }
                     // Prepare next iteration step
                     working_col += 1;
                 }
@@ -114,13 +149,17 @@ impl DacPuzzleSolver {
     }
 
     /// Move a field given its index to a goal index.
-    fn swap_field_to_goal_pos(&mut self, mut goal_value_pos: Coords<i32>, goal_pos: Coords<i32>) {
+    fn swap_field_to_goal_pos(
+        &mut self,
+        mut goal_value_pos: Coords<i32>,
+        goal_pos: Coords<i32>,
+        phase: SolverPhase,
+    ) {
         // Determine the next target on the way to the goal position for the field
         // which we are moving. One iteration of the loop moves the empty field to
         // this target and then swaps the field with the empty field.
         loop {
             // Identify next target field between field to move and goal field
-            // TODO: Abstract
             let delta_coords = Coords {
                 row: goal_pos.row - goal_value_pos.row,
                 col: goal_pos.col - goal_value_pos.col,
@@ -133,7 +172,8 @@ impl DacPuzzleSolver {
             }
 
             // For the upper row, move horizontal first
-            let target_coords = identify_next_step_field_horiz_first(goal_value_pos, delta_coords);
+            let target_coords =
+                identify_next_step_field_horiz_first(goal_value_pos, delta_coords, phase);
 
             // Compute the moves required to bring the empty field to the target
             // field position and apply them.
@@ -157,6 +197,7 @@ impl DacPuzzleSolver {
         &mut self,
         field_value: u8,
         field_goal_pos: Coords<i32>,
+        phase: SolverPhase,
     ) {
         let goal_pos = Coords {
             // The currently targeted field should end up two rows below its
@@ -197,7 +238,7 @@ impl DacPuzzleSolver {
         // 0 1 X
         // X X X
         // X   2
-        self.swap_field_to_goal_pos(value_cur_pos, goal_pos);
+        self.swap_field_to_goal_pos(value_cur_pos, goal_pos, phase);
 
         // Move the empty field in between the goal position of the last field
         // in the original row and its current position two fields down
@@ -319,40 +360,77 @@ impl DacPuzzleSolver {
 fn identify_next_step_field_horiz_first(
     field_coords: Coords<i32>,
     delta_coords: Coords<i32>,
+    phase: SolverPhase,
 ) -> Coords<i32> {
-    // Move horizontal first
-    if delta_coords.col != 0 {
-        if delta_coords.col < 0 {
-            return Coords {
-                row: field_coords.row,
-                col: field_coords.col - 1,
-            };
-        } else {
-            return Coords {
-                row: field_coords.row,
-                col: field_coords.col + 1,
-            };
+    match phase {
+        SolverPhase::Row => {
+            // Move horizontally first
+            if delta_coords.col != 0 {
+                return Coords {
+                    row: field_coords.row,
+                    col: field_coords.col + delta_coords.col.signum(),
+                };
+            }
+
+            if delta_coords.row != 0 {
+                return Coords {
+                    row: field_coords.row + delta_coords.row.signum(),
+                    col: field_coords.col,
+                };
+            }
+        }
+        SolverPhase::Column => {
+            // Move vertically first
+            if delta_coords.row != 0 {
+                return Coords {
+                    row: field_coords.row + delta_coords.row.signum(),
+                    col: field_coords.col,
+                };
+            }
+
+            if delta_coords.col != 0 {
+                return Coords {
+                    row: field_coords.row,
+                    col: field_coords.col + delta_coords.col.signum(),
+                };
+            }
         }
     }
 
-    if delta_coords.row != 0 {
-        if delta_coords.row < 0 {
-            return Coords {
-                row: field_coords.row - 1,
-                col: field_coords.col,
-            };
-        } else {
-            return Coords {
-                row: field_coords.row + 1,
-                col: field_coords.col,
-            };
-        }
-    } else {
-        return Coords {
-            row: field_coords.row,
-            col: field_coords.col,
-        };
-    }
+    field_coords
+    // // Move horizontal first
+    // if delta_coords.col != 0 {
+    //     if delta_coords.col < 0 {
+    //         return Coords {
+    //             row: field_coords.row,
+    //             col: field_coords.col - 1,
+    //         };
+    //     } else {
+    //         return Coords {
+    //             row: field_coords.row,
+    //             col: field_coords.col + 1,
+    //         };
+    //     }
+    // }
+
+    // if delta_coords.row != 0 {
+    //     if delta_coords.row < 0 {
+    //         return Coords {
+    //             row: field_coords.row - 1,
+    //             col: field_coords.col,
+    //         };
+    //     } else {
+    //         return Coords {
+    //             row: field_coords.row + 1,
+    //             col: field_coords.col,
+    //         };
+    //     }
+    // } else {
+    //     return Coords {
+    //         row: field_coords.row,
+    //         col: field_coords.col,
+    //     };
+    // }
 }
 
 /// Get the index of a value in a slice.
