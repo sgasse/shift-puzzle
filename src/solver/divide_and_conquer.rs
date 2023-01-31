@@ -1,8 +1,7 @@
 use std::collections::{HashMap, HashSet, VecDeque};
 
 use crate::board::{
-    get_coords_from_idx, get_empty_field_idx, get_idx_from_coords, in_bounds, initialize_fields,
-    Coords,
+    get_coords_from_idx, get_idx_from_coords, in_bounds, initialize_fields, Coords,
 };
 
 pub struct DacPuzzleSolver {
@@ -11,6 +10,7 @@ pub struct DacPuzzleSolver {
     width: i32,
     height: i32,
     empty_field_idx: i32,
+    swaps: Vec<(usize, usize)>,
 }
 
 impl DacPuzzleSolver {
@@ -26,13 +26,12 @@ impl DacPuzzleSolver {
             width,
             height,
             empty_field_idx,
+            swaps: Vec::new(),
         }
     }
 
     pub fn solve_puzzle(&mut self) -> Vec<(usize, usize)> {
         let goal_array = initialize_fields((self.width * self.height) as usize);
-
-        let mut swaps = Vec::new();
 
         let mut current_row = 0;
         for col in 0..self.width - 1 {
@@ -48,9 +47,7 @@ impl DacPuzzleSolver {
                 if cur_field != goal_field {
                     let goal_idx = get_idx_of_val(&goal_array, *goal_field);
                     let field_idx = get_idx_of_val(&self.fields, *goal_field);
-                    let iteration_swaps = self.compute_swaps_to_goal_pos(field_idx, goal_idx);
-
-                    swaps.extend(iteration_swaps);
+                    self.compute_swaps_to_goal_pos(field_idx, goal_idx);
                 }
                 self.forbidden_fields.insert(cur_coords);
             }
@@ -63,17 +60,12 @@ impl DacPuzzleSolver {
         };
         let field_idx: i32 = get_idx_from_coords(field_goal_pos, self.width);
         let field_value = *goal_array.get(field_idx as usize).expect("Field value");
-        let corner_swaps = self.get_corner_swaps_horizontally(field_value, field_goal_pos);
-        swaps.extend(corner_swaps);
+        self.get_corner_swaps_horizontally(field_value, field_goal_pos);
 
-        swaps
+        self.swaps.clone()
     }
 
-    fn get_corner_swaps_horizontally(
-        &mut self,
-        field_value: u8,
-        field_goal_pos: Coords<i32>,
-    ) -> Vec<(usize, usize)> {
+    fn get_corner_swaps_horizontally(&mut self, field_value: u8, field_goal_pos: Coords<i32>) {
         // Move last piece to place two rows below
 
         // May need a shortcut for a setting like this:
@@ -86,7 +78,7 @@ impl DacPuzzleSolver {
             col: field_goal_pos.col,
         };
         let goal_idx = get_idx_from_coords(goal_pos, self.width);
-        let mut swaps = self.compute_swaps_to_goal_pos(field_idx, goal_idx);
+        self.compute_swaps_to_goal_pos(field_idx, goal_idx);
         let empty_field = get_coords_from_idx(self.empty_field_idx, self.width);
 
         let empty_target_pos = Coords {
@@ -96,42 +88,31 @@ impl DacPuzzleSolver {
 
         // Move empty field to one row below
         let moves = self.compute_empty_field_moves(goal_pos, empty_target_pos, empty_field);
-        swaps.extend(self.apply_empty_field_moves(&moves));
+        self.apply_empty_field_moves(&moves);
 
         // Do fixed swaps
         let moves = get_fixed_corner_moves_horizontally(empty_target_pos);
-        swaps.extend(self.apply_empty_field_moves(&moves));
-
-        swaps
+        self.apply_empty_field_moves(&moves);
     }
 
-    fn apply_empty_field_moves(&mut self, moves: &[Coords<i32>]) -> Vec<(usize, usize)> {
-        let mut swaps = Vec::with_capacity(moves.len());
+    fn apply_empty_field_moves(&mut self, moves: &[Coords<i32>]) {
         for step in moves {
             let step_idx: i32 = get_idx_from_coords(*step, self.width);
 
             // Create and apply swap
             let swap = (self.empty_field_idx as usize, step_idx as usize);
-            swaps.push(swap);
+            self.swaps.push(swap);
             self.fields.swap(swap.0, swap.1);
 
             // Update empty field index
             self.empty_field_idx = step_idx;
         }
-
-        swaps
     }
 
     /// Move a field given its index to a goal index.
-    fn compute_swaps_to_goal_pos(
-        &mut self,
-        mut field_idx: i32,
-        goal_idx: i32,
-    ) -> Vec<(usize, usize)> {
+    fn compute_swaps_to_goal_pos(&mut self, mut field_idx: i32, goal_idx: i32) {
         // let goal_array: Vec<u8> = (0..(fields.len() as u8 - 1)).into_iter().collect();
         let goal_pos = get_coords_from_idx(goal_idx, self.width);
-
-        let mut swaps = Vec::new();
 
         // Determine the next target on the way to the goal position for the field
         // which we are moving. One iteration of the loop moves the empty field to
@@ -150,7 +131,7 @@ impl DacPuzzleSolver {
             // Check if the field we are moving reached the goal field and return
             // swaps if so.
             if delta_coords == (Coords { row: 0, col: 0 }) {
-                return swaps;
+                return;
             }
 
             // For the upper row, move horizontal first
@@ -159,13 +140,12 @@ impl DacPuzzleSolver {
             // Compute the moves required to bring the empty field to the target
             // field position and apply them.
             let moves = self.compute_empty_field_moves(field_coords, target_coords, empty_field);
-            let iteration_swaps = self.apply_empty_field_moves(&moves);
-            swaps.extend(iteration_swaps);
+            self.apply_empty_field_moves(&moves);
 
             // Include swapping the empty field and the field we are moving
             let swap = (self.empty_field_idx as usize, field_idx as usize);
             self.fields.swap(swap.0, swap.1);
-            swaps.push(swap);
+            self.swaps.push(swap);
             let tmp = self.empty_field_idx;
             self.empty_field_idx = field_idx;
             field_idx = tmp;
