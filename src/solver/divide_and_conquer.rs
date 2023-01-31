@@ -47,7 +47,7 @@ impl DacPuzzleSolver {
                 if cur_field != goal_field {
                     let goal_idx = get_idx_of_val(&goal_array, *goal_field);
                     let field_idx = get_idx_of_val(&self.fields, *goal_field);
-                    self.compute_swaps_to_goal_pos(field_idx, goal_idx);
+                    self.swap_field_to_goal_pos(field_idx, goal_idx);
                 }
                 self.forbidden_fields.insert(cur_coords);
             }
@@ -60,57 +60,13 @@ impl DacPuzzleSolver {
         };
         let field_idx: i32 = get_idx_from_coords(field_goal_pos, self.width);
         let field_value = *goal_array.get(field_idx as usize).expect("Field value");
-        self.get_corner_swaps_horizontally(field_value, field_goal_pos);
+        self.swap_corner_fields_to_goal_horizontally(field_value, field_goal_pos);
 
         self.swaps.clone()
     }
 
-    fn get_corner_swaps_horizontally(&mut self, field_value: u8, field_goal_pos: Coords<i32>) {
-        // Move last piece to place two rows below
-
-        // May need a shortcut for a setting like this:
-        // 0 1
-        // X X 2
-        // X X X
-        let field_idx = get_idx_of_val(&self.fields, field_value);
-        let goal_pos = Coords {
-            row: field_goal_pos.row + 2,
-            col: field_goal_pos.col,
-        };
-        let goal_idx = get_idx_from_coords(goal_pos, self.width);
-        self.compute_swaps_to_goal_pos(field_idx, goal_idx);
-        let empty_field = get_coords_from_idx(self.empty_field_idx, self.width);
-
-        let empty_target_pos = Coords {
-            row: goal_pos.row - 1,
-            col: goal_pos.col,
-        };
-
-        // Move empty field to one row below
-        let moves = self.compute_empty_field_moves(goal_pos, empty_target_pos, empty_field);
-        self.apply_empty_field_moves(&moves);
-
-        // Do fixed swaps
-        let moves = get_fixed_corner_moves_horizontally(empty_target_pos);
-        self.apply_empty_field_moves(&moves);
-    }
-
-    fn apply_empty_field_moves(&mut self, moves: &[Coords<i32>]) {
-        for step in moves {
-            let step_idx: i32 = get_idx_from_coords(*step, self.width);
-
-            // Create and apply swap
-            let swap = (self.empty_field_idx as usize, step_idx as usize);
-            self.swaps.push(swap);
-            self.fields.swap(swap.0, swap.1);
-
-            // Update empty field index
-            self.empty_field_idx = step_idx;
-        }
-    }
-
     /// Move a field given its index to a goal index.
-    fn compute_swaps_to_goal_pos(&mut self, mut field_idx: i32, goal_idx: i32) {
+    fn swap_field_to_goal_pos(&mut self, mut field_idx: i32, goal_idx: i32) {
         // let goal_array: Vec<u8> = (0..(fields.len() as u8 - 1)).into_iter().collect();
         let goal_pos = get_coords_from_idx(goal_idx, self.width);
 
@@ -140,7 +96,7 @@ impl DacPuzzleSolver {
             // Compute the moves required to bring the empty field to the target
             // field position and apply them.
             let moves = self.compute_empty_field_moves(field_coords, target_coords, empty_field);
-            self.apply_empty_field_moves(&moves);
+            self.apply_empty_field_moves_as_swaps(&moves);
 
             // Include swapping the empty field and the field we are moving
             let swap = (self.empty_field_idx as usize, field_idx as usize);
@@ -150,6 +106,40 @@ impl DacPuzzleSolver {
             self.empty_field_idx = field_idx;
             field_idx = tmp;
         }
+    }
+
+    fn swap_corner_fields_to_goal_horizontally(
+        &mut self,
+        field_value: u8,
+        field_goal_pos: Coords<i32>,
+    ) {
+        // Move last piece to place two rows below
+
+        // May need a shortcut for a setting like this:
+        // 0 1
+        // X X 2
+        // X X X
+        let field_idx = get_idx_of_val(&self.fields, field_value);
+        let goal_pos = Coords {
+            row: field_goal_pos.row + 2,
+            col: field_goal_pos.col,
+        };
+        let goal_idx = get_idx_from_coords(goal_pos, self.width);
+        self.swap_field_to_goal_pos(field_idx, goal_idx);
+        let empty_field = get_coords_from_idx(self.empty_field_idx, self.width);
+
+        let empty_target_pos = Coords {
+            row: goal_pos.row - 1,
+            col: goal_pos.col,
+        };
+
+        // Move empty field to one row below
+        let moves = self.compute_empty_field_moves(goal_pos, empty_target_pos, empty_field);
+        self.apply_empty_field_moves_as_swaps(&moves);
+
+        // Do fixed swaps
+        let moves = get_fixed_corner_moves_horizontally(empty_target_pos);
+        self.apply_empty_field_moves_as_swaps(&moves);
     }
 
     /// Compute the path of shifting the empty field.
@@ -227,6 +217,20 @@ impl DacPuzzleSolver {
         // Reverse to start from the beginning and return
         parents.reverse();
         parents
+    }
+
+    fn apply_empty_field_moves_as_swaps(&mut self, moves: &[Coords<i32>]) {
+        for step in moves {
+            let step_idx: i32 = get_idx_from_coords(*step, self.width);
+
+            // Create and apply swap
+            let swap = (self.empty_field_idx as usize, step_idx as usize);
+            self.swaps.push(swap);
+            self.fields.swap(swap.0, swap.1);
+
+            // Update empty field index
+            self.empty_field_idx = step_idx;
+        }
     }
 }
 
