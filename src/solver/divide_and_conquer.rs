@@ -53,14 +53,22 @@ impl DacPuzzleSolver {
             }
         }
 
-        // Solve complicated part now
-        let field_goal_pos = Coords {
+        // Solve corner part
+        let cur_goal_pos = Coords {
             row: current_row,
             col: self.width - 1,
         };
-        let field_idx: i32 = get_idx_from_coords(field_goal_pos, self.width);
-        let field_value = *goal_array.get(field_idx as usize).expect("Field value");
-        self.swap_corner_fields_to_goal_horizontally(field_value, field_goal_pos);
+        let cur_field_idx: i32 = get_idx_from_coords(cur_goal_pos, self.width);
+        let cur_field_value = *self
+            .fields
+            .get(cur_field_idx as usize)
+            .expect("Field value");
+        let cur_field_goal_value = *goal_array.get(cur_field_idx as usize).expect("Field value");
+
+        // Only enter the blind routine if the field is not yet in place
+        if cur_field_value != cur_field_goal_value {
+            self.swap_corner_fields_to_goal_horizontally(cur_field_goal_value, cur_goal_pos);
+        }
 
         self.swaps.clone()
     }
@@ -108,37 +116,78 @@ impl DacPuzzleSolver {
         }
     }
 
+    fn value_at_pos(&self, pos: Coords<i32>) -> u8 {
+        let idx: i32 = get_idx_from_coords(pos, self.width);
+        *self.fields.get(idx as usize).expect("Index should exist")
+    }
+
     fn swap_corner_fields_to_goal_horizontally(
         &mut self,
         field_value: u8,
         field_goal_pos: Coords<i32>,
     ) {
-        // Move last piece to place two rows below
-
-        // May need a shortcut for a setting like this:
-        // 0 1
-        // X X 2
-        // X X X
-        let field_idx = get_idx_of_val(&self.fields, field_value);
         let goal_pos = Coords {
+            // The currently targeted field should end up two rows below its
+            // final goal position in the same column
             row: field_goal_pos.row + 2,
             col: field_goal_pos.col,
         };
-        let goal_idx = get_idx_from_coords(goal_pos, self.width);
-        self.swap_field_to_goal_pos(field_idx, goal_idx);
-        let empty_field = get_coords_from_idx(self.empty_field_idx, self.width);
-
-        let empty_target_pos = Coords {
+        let empty_field_target_pos = Coords {
+            // The empty field should end up in the same column but one row
+            // above the currently targeted field
             row: goal_pos.row - 1,
             col: goal_pos.col,
         };
 
-        // Move empty field to one row below
-        let moves = self.compute_empty_field_moves(goal_pos, empty_target_pos, empty_field);
+        let field_idx = get_idx_of_val(&self.fields, field_value);
+        let goal_idx = get_idx_from_coords(goal_pos, self.width);
+
+        // It can happen that we enter this function in a state like this:
+        // 0 1
+        // X X 2
+        // X X X
+        // In this case, our routine would fail to find a path because it cannot
+        // move the targeted field (2) or any of the already sorted fields (0
+        // and 1). Thus, we have to check for and handle this case explicitly.
+        if self.value_at_pos(field_goal_pos) == u8::MAX
+            && self.value_at_pos(Coords {
+                row: field_goal_pos.row + 1,
+                col: field_goal_pos.col,
+            }) == field_value
+        {
+            // Just swap the field into position and return
+            let swap = (self.empty_field_idx as usize, field_idx as usize);
+            self.fields.swap(swap.0, swap.1);
+            self.swaps.push(swap);
+            self.empty_field_idx = field_idx;
+            return;
+        }
+
+        // Move the last field in the row to the right column but two rows
+        // further down
+        // Example goal state (empty field may be somwhere else):
+        // 0 1 X
+        // X X X
+        // X   2
+        self.swap_field_to_goal_pos(field_idx, goal_idx);
+
+        // Move the empty field in between the goal position of the last field
+        // in the original row and its current position two fields down
+        // Example goal state:
+        // 0 1 X
+        // X X
+        // X X 2
+        let empty_field_pos = get_coords_from_idx(self.empty_field_idx, self.width);
+        let moves =
+            self.compute_empty_field_moves(goal_pos, empty_field_target_pos, empty_field_pos);
         self.apply_empty_field_moves_as_swaps(&moves);
 
-        // Do fixed swaps
-        let moves = get_fixed_corner_moves_horizontally(empty_target_pos);
+        // Apply deterministic order of swaps from the state that we set up
+        // Goal state:
+        // 0 1 2
+        // X X
+        // X X X
+        let moves = get_fixed_corner_moves_horizontally(empty_field_target_pos);
         self.apply_empty_field_moves_as_swaps(&moves);
     }
 
@@ -415,7 +464,7 @@ mod test {
     }
 
     #[test]
-    fn test_second() {
+    fn test_corner_case_corner_solved() {
         let mut test_fields = vec![2, 1, 5, 3, 0, 7, 255, 6, 4];
 
         let mut solver = DacPuzzleSolver::new(&test_fields, 3, 3);
@@ -426,5 +475,7 @@ mod test {
         }
 
         assert_eq!(test_fields.get(0), Some(&0));
+
+        // Should have parent error [2, 1, 5, 7, 3, 4, 0, 6, 255]
     }
 }
