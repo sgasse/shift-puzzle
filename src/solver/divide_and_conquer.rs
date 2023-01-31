@@ -57,7 +57,7 @@ impl DacPuzzleSolver {
         let mut working_col = 0;
 
         'row_col_loop: loop {
-            if self.width - working_col <= 2 || self.height - working_row <= 2 {
+            if self.width - working_col < 2 || self.height - working_row < 2 {
                 break 'row_col_loop;
             }
 
@@ -98,9 +98,6 @@ impl DacPuzzleSolver {
 
                     // Prepare next iteration step
                     working_row += 1;
-
-                    // TODO: Remove
-                    break 'row_col_loop;
                 }
                 SolverPhase::Column => {
                     // Solve fields in the column starting at `working_row`
@@ -135,8 +132,12 @@ impl DacPuzzleSolver {
                             phase,
                         );
                     }
+
                     // Prepare next iteration step
                     working_col += 1;
+
+                    // TODO: Remove
+                    break 'row_col_loop;
                 }
             }
 
@@ -172,8 +173,7 @@ impl DacPuzzleSolver {
             }
 
             // For the upper row, move horizontal first
-            let target_coords =
-                identify_next_step_field_horiz_first(goal_value_pos, delta_coords, phase);
+            let target_coords = identify_next_step_field(goal_value_pos, delta_coords, phase);
 
             // Compute the moves required to bring the empty field to the target
             // field position and apply them.
@@ -207,7 +207,7 @@ impl DacPuzzleSolver {
         };
         let empty_field_target_pos = Coords {
             // The empty field should end up in the same column but one row
-            // above the currently targeted field
+            // below the final goal position/one row above the goal position
             row: goal_pos.row - 1,
             col: goal_pos.col,
         };
@@ -357,7 +357,7 @@ impl DacPuzzleSolver {
     }
 }
 
-fn identify_next_step_field_horiz_first(
+fn identify_next_step_field(
     field_coords: Coords<i32>,
     delta_coords: Coords<i32>,
     phase: SolverPhase,
@@ -398,39 +398,6 @@ fn identify_next_step_field_horiz_first(
     }
 
     field_coords
-    // // Move horizontal first
-    // if delta_coords.col != 0 {
-    //     if delta_coords.col < 0 {
-    //         return Coords {
-    //             row: field_coords.row,
-    //             col: field_coords.col - 1,
-    //         };
-    //     } else {
-    //         return Coords {
-    //             row: field_coords.row,
-    //             col: field_coords.col + 1,
-    //         };
-    //     }
-    // }
-
-    // if delta_coords.row != 0 {
-    //     if delta_coords.row < 0 {
-    //         return Coords {
-    //             row: field_coords.row - 1,
-    //             col: field_coords.col,
-    //         };
-    //     } else {
-    //         return Coords {
-    //             row: field_coords.row + 1,
-    //             col: field_coords.col,
-    //         };
-    //     }
-    // } else {
-    //     return Coords {
-    //         row: field_coords.row,
-    //         col: field_coords.col,
-    //     };
-    // }
 }
 
 /// Get the index of a value in a slice.
