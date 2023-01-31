@@ -11,6 +11,12 @@ pub struct DacPuzzleSolver {
     height: i32,
     empty_field_idx: i32,
     swaps: Vec<(usize, usize)>,
+    goal_array: Vec<u8>,
+}
+
+enum SolverPhase {
+    Row,
+    Column,
 }
 
 impl DacPuzzleSolver {
@@ -27,49 +33,84 @@ impl DacPuzzleSolver {
             height,
             empty_field_idx,
             swaps: Vec::new(),
+            goal_array: initialize_fields((width * height) as usize),
         }
     }
 
-    pub fn solve_puzzle(&mut self) -> Vec<(usize, usize)> {
-        let goal_array = initialize_fields((self.width * self.height) as usize);
+    fn get_field(&self, pos: Coords<i32>) -> u8 {
+        let idx: usize = get_idx_from_coords::<i32, i32>(pos, self.width) as usize;
+        assert!(idx < self.fields.len());
+        *self.fields.get(idx).unwrap()
+    }
 
-        let mut current_row = 0;
-        for col in 0..self.width - 1 {
-            let cur_coords = Coords {
-                row: current_row,
-                col,
-            };
-            let cur_idx: i32 = get_idx_from_coords(cur_coords, self.width);
-            if let (Some(cur_field), Some(goal_field)) = (
-                self.fields.get(cur_idx as usize),
-                goal_array.get(cur_idx as usize),
-            ) {
-                if cur_field != goal_field {
-                    let goal_idx = get_idx_of_val(&goal_array, *goal_field);
-                    let field_idx = get_idx_of_val(&self.fields, *goal_field);
-                    self.swap_field_to_goal_pos(field_idx, goal_idx);
+    fn get_goal_value(&self, pos: Coords<i32>) -> u8 {
+        let idx: usize = get_idx_from_coords::<i32, i32>(pos, self.width) as usize;
+        assert!(idx < self.goal_array.len());
+        *self.goal_array.get(idx).unwrap()
+    }
+
+    pub fn solve_puzzle(&mut self) -> Vec<(usize, usize)> {
+        let mut phase = SolverPhase::Row;
+        let mut working_row = 0;
+        let mut working_col = 0;
+
+        'row_col_loop: loop {
+            match phase {
+                SolverPhase::Row => {
+                    for col in working_col..self.width - 1 {
+                        let cur_coords = Coords {
+                            row: working_row,
+                            col,
+                        };
+                        // let cur_idx: i32 = get_idx_from_coords(cur_coords, self.width);
+                        let cur_field_value = self.get_field(cur_coords);
+                        let goal_field = self.get_goal_value(cur_coords);
+                        if cur_field_value != goal_field {
+                            let goal_idx = get_idx_of_val(&self.goal_array, goal_field);
+                            let field_idx = get_idx_of_val(&self.fields, goal_field);
+                            self.swap_field_to_goal_pos(field_idx, goal_idx);
+                        }
+                        self.forbidden_fields.insert(cur_coords);
+                    }
+
+                    // Solve corner part
+                    let cur_goal_pos = Coords {
+                        row: working_row,
+                        col: self.width - 1,
+                    };
+                    let cur_field_idx: i32 = get_idx_from_coords(cur_goal_pos, self.width);
+                    let cur_field_value = *self
+                        .fields
+                        .get(cur_field_idx as usize)
+                        .expect("Field value");
+                    let cur_field_goal_value = *self
+                        .goal_array
+                        .get(cur_field_idx as usize)
+                        .expect("Field value");
+
+                    // Only enter the blind routine if the field is not yet in place
+                    if cur_field_value != cur_field_goal_value {
+                        self.swap_corner_fields_to_goal_horizontally(
+                            cur_field_goal_value,
+                            cur_goal_pos,
+                        );
+                    }
+
+                    // Prepare next iteration step
+                    working_row += 1;
+                    phase = match phase {
+                        SolverPhase::Row => SolverPhase::Column,
+                        SolverPhase::Column => SolverPhase::Row,
+                    };
+
+                    // TODO: Remove
+                    break 'row_col_loop;
                 }
-                self.forbidden_fields.insert(cur_coords);
+                SolverPhase::Column => {
+                    // Nothing so far
+                }
             }
         }
-
-        // Solve corner part
-        let cur_goal_pos = Coords {
-            row: current_row,
-            col: self.width - 1,
-        };
-        let cur_field_idx: i32 = get_idx_from_coords(cur_goal_pos, self.width);
-        let cur_field_value = *self
-            .fields
-            .get(cur_field_idx as usize)
-            .expect("Field value");
-        let cur_field_goal_value = *goal_array.get(cur_field_idx as usize).expect("Field value");
-
-        // Only enter the blind routine if the field is not yet in place
-        if cur_field_value != cur_field_goal_value {
-            self.swap_corner_fields_to_goal_horizontally(cur_field_goal_value, cur_goal_pos);
-        }
-
         self.swaps.clone()
     }
 
