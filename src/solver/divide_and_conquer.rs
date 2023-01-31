@@ -21,6 +21,7 @@ enum SolverPhase {
 }
 
 impl DacPuzzleSolver {
+    /// Create a new solver instance.
     pub fn new(fields: &[u8], width: i32, height: i32) -> Self {
         assert_eq!(fields.len() as i32, width * height);
 
@@ -39,62 +40,24 @@ impl DacPuzzleSolver {
         }
     }
 
-    fn get_field(&self, pos: Coords<i32>) -> u8 {
-        let idx: usize = get_idx_from_coords::<i32, i32>(pos, self.width) as usize;
-        assert!(idx < self.fields.len());
-        *self.fields.get(idx).unwrap()
-    }
-
-    fn get_goal_value(&self, pos: Coords<i32>) -> u8 {
-        let idx: usize = get_idx_from_coords::<i32, i32>(pos, self.width) as usize;
-        assert!(idx < self.goal_array.len());
-        *self.goal_array.get(idx).unwrap()
-    }
-
-    fn solve_last_four_fields(&mut self) {
-        let last_fields_cycle = vec![
-            Coords {
-                row: self.height - 1,
-                col: self.width - 2,
-            },
-            Coords {
-                row: self.height - 2,
-                col: self.width - 2,
-            },
-            Coords {
-                row: self.height - 2,
-                col: self.width - 1,
-            },
-            Coords {
-                row: self.height - 1,
-                col: self.width - 1,
-            },
-        ];
-
-        let outer_last_field = last_fields_cycle[3];
-        let inner_last_field = last_fields_cycle[1];
-
-        // Ensure empty field is in position
-        if self.empty_field_pos != outer_last_field {
-            if self.empty_field_pos == inner_last_field {
-                self.apply_empty_field_moves_as_swaps(&[last_fields_cycle[0]]);
-            }
-
-            self.apply_empty_field_moves_as_swaps(&[outer_last_field]);
-        }
-
-        // Cycle last fields until we are in position
-        while self.fields != self.goal_array {
-            self.apply_empty_field_moves_as_swaps(&last_fields_cycle)
-        }
-    }
-
+    /// Solve a slide-puzzle by finding the required swaps (empty field moves).
     pub fn solve_puzzle(&mut self) -> Vec<(usize, usize)> {
+        // We alternate phases of solving rows and columns
         let mut phase = SolverPhase::Row;
+
+        // As working_row and working_col increase, they lock out growing parts
+        // of already ordered fields. The array below shows the order of solving
+        // a 4x4 field, E stand for end.
+        // 0 0 0 0
+        // 1 2 2 2
+        // 1 3 E E
+        // 1 3 E E
         let mut working_row = 0;
         let mut working_col = 0;
 
         'row_col_loop: loop {
+            // Exit alternating row/column solving if only a square of 2x2 is
+            // left
             if self.width - working_col < 2 || self.height - working_row < 2 {
                 break 'row_col_loop;
             }
@@ -104,14 +67,15 @@ impl DacPuzzleSolver {
                     // Solve fields in the row starting at `working_col` until
                     // the second last.
                     for col in working_col..self.width - 1 {
+                        // Position that we want to fill with the right value/field
                         let cur_pos = Coords {
                             row: working_row,
                             col,
                         };
-                        let cur_pos_value = self.get_field(cur_pos);
-                        let cur_pos_goal_value = self.get_goal_value(cur_pos);
+                        let cur_pos_value = self.value_at_pos(cur_pos);
+                        let cur_pos_goal_value = self.goal_value_of_pos(cur_pos);
                         if cur_pos_value != cur_pos_goal_value {
-                            let goal_value_pos = self.get_pos_of_val(cur_pos_goal_value);
+                            let goal_value_pos = self.pos_of_value(cur_pos_goal_value);
                             self.swap_field_to_goal_pos(goal_value_pos, cur_pos, phase);
                         }
                         self.forbidden_fields.insert(cur_pos);
@@ -124,8 +88,8 @@ impl DacPuzzleSolver {
                     };
 
                     // Only enter the blind routine if the field is not yet in place
-                    let cur_pos_value = self.get_field(cur_pos);
-                    let cur_pos_goal_value = self.get_goal_value(cur_pos);
+                    let cur_pos_value = self.value_at_pos(cur_pos);
+                    let cur_pos_goal_value = self.goal_value_of_pos(cur_pos);
                     if cur_pos_value != cur_pos_goal_value {
                         self.swap_corner_fields_to_goal(cur_pos_goal_value, cur_pos, phase);
                     }
@@ -137,14 +101,15 @@ impl DacPuzzleSolver {
                     // Solve fields in the column starting at `working_row`
                     // until the second last.
                     for row in working_row..self.height - 1 {
+                        // Position that we want to fill with the right value/field
                         let cur_pos = Coords {
                             row,
                             col: working_col,
                         };
-                        let cur_pos_value = self.get_field(cur_pos);
-                        let cur_pos_goal_value = self.get_goal_value(cur_pos);
+                        let cur_pos_value = self.value_at_pos(cur_pos);
+                        let cur_pos_goal_value = self.goal_value_of_pos(cur_pos);
                         if cur_pos_value != cur_pos_goal_value {
-                            let goal_value_pos = self.get_pos_of_val(cur_pos_goal_value);
+                            let goal_value_pos = self.pos_of_value(cur_pos_goal_value);
                             self.swap_field_to_goal_pos(goal_value_pos, cur_pos, phase);
                         }
                         self.forbidden_fields.insert(cur_pos);
@@ -157,8 +122,8 @@ impl DacPuzzleSolver {
                     };
 
                     // Only enter the blind routine if the field is not yet in place
-                    let cur_pos_value = self.get_field(cur_pos);
-                    let cur_pos_goal_value = self.get_goal_value(cur_pos);
+                    let cur_pos_value = self.value_at_pos(cur_pos);
+                    let cur_pos_goal_value = self.goal_value_of_pos(cur_pos);
                     if cur_pos_value != cur_pos_goal_value {
                         self.swap_corner_fields_to_goal(cur_pos_goal_value, cur_pos, phase);
                     }
@@ -179,7 +144,7 @@ impl DacPuzzleSolver {
         self.swaps.clone()
     }
 
-    /// Move a field given its index to a goal index.
+    /// Move a field to a goal position.
     fn swap_field_to_goal_pos(
         &mut self,
         mut goal_value_pos: Coords<i32>,
@@ -197,12 +162,12 @@ impl DacPuzzleSolver {
             };
 
             // Check if the field we are moving reached the goal field and return
-            // swaps if so.
+            // if so.
             if delta_coords == (Coords { row: 0, col: 0 }) {
                 return;
             }
 
-            // For the upper row, move horizontal first
+            // Identify target coordinates to move to
             let target_coords = identify_next_step_field(goal_value_pos, delta_coords, phase);
 
             // Compute the moves required to bring the empty field to the target
@@ -218,17 +183,15 @@ impl DacPuzzleSolver {
         }
     }
 
-    fn value_at_pos(&self, pos: Coords<i32>) -> u8 {
-        let idx: i32 = get_idx_from_coords(pos, self.width);
-        *self.fields.get(idx as usize).expect("Index should exist")
-    }
-
+    /// Swap the corner fields at the end of a row/column into position.
     fn swap_corner_fields_to_goal(
         &mut self,
         field_value: u8,
         field_goal_pos: Coords<i32>,
         phase: SolverPhase,
     ) {
+        // Determine the target and intermediate position based on whether we
+        // are solving a row or a column
         let (goal_pos, empty_field_target_pos) = match phase {
             SolverPhase::Row => {
                 (
@@ -264,20 +227,8 @@ impl DacPuzzleSolver {
                 )
             }
         };
-        // let goal_pos = Coords {
-        //     // The currently targeted field should end up two rows below its
-        //     // final goal position in the same column
-        //     row: field_goal_pos.row + 2,
-        //     col: field_goal_pos.col,
-        // };
-        // let empty_field_target_pos = Coords {
-        //     // The empty field should end up in the same column but one row
-        //     // below the final goal position/one row above the goal position
-        //     row: goal_pos.row - 1,
-        //     col: goal_pos.col,
-        // };
 
-        let value_cur_pos = self.get_pos_of_val(field_value);
+        let value_cur_pos = self.pos_of_value(field_value);
 
         // It can happen that we enter this function in a state like this:
         // 0 1
@@ -337,14 +288,14 @@ impl DacPuzzleSolver {
         // our empty field once we reach the target field.
         let mut parent_field = HashMap::new();
 
-        // Set of seen fields and queue of fields to explore for Dijkstra algorithm.
+        // Set of seen fields and queue of fields to explore for BFS algorithm.
         let mut seen_neighbours: HashSet<Coords<i32>> = HashSet::new();
         let mut to_discover = VecDeque::from([empty_field]);
 
-        // Run Dijkstra (excluding forbidden fields) from empty field until we find
+        // Run BFS (excluding forbidden fields) from empty field until we find
         // the target field.
         'expansion: while let Some(cur_field) = to_discover.pop_front() {
-            // Mark neighbour as seen/processed for Dijkstra. We do this before
+            // Mark neighbour as seen/processed for BFS. We do this before
             // looping through the neighbours so that we can break as soon as we
             // see the target field.
             seen_neighbours.insert(cur_field);
@@ -378,7 +329,7 @@ impl DacPuzzleSolver {
                 parent_field.insert(neighbour, cur_field);
                 to_discover.push_back(neighbour);
                 // If our target field is among the neighbours, terminate the
-                // Dijkstra search.
+                // BFS search.
                 if neighbour == target_field {
                     break 'expansion;
                 }
@@ -401,6 +352,62 @@ impl DacPuzzleSolver {
         parents
     }
 
+    /// Solve the 2x2 square on the bottom right.
+    ///
+    /// The empty field has to be in the bottom right corner in the final solved
+    /// state. The remaining three fields can be rotated.
+    /// We solve the puzzle by moving the empty field to the bottom right and
+    /// then running full cycles of rotating the empty field around until the
+    /// position fits.
+    ///
+    /// X X X   X X X                                X X X
+    /// X 5     X 5 7  -> multiple of four steps ->  X 4 5
+    /// X 4 7   X 4                                  X 7  
+    ///
+    fn solve_last_four_fields(&mut self) {
+        // These four positions/moves describe one full cycle of the empty
+        // field clockwise
+        let last_fields_cycle = vec![
+            Coords {
+                row: self.height - 1,
+                col: self.width - 2,
+            },
+            Coords {
+                row: self.height - 2,
+                col: self.width - 2,
+            },
+            Coords {
+                row: self.height - 2,
+                col: self.width - 1,
+            },
+            Coords {
+                row: self.height - 1,
+                col: self.width - 1,
+            },
+        ];
+
+        let outer_last_field = last_fields_cycle[3];
+        let inner_last_field = last_fields_cycle[1];
+
+        // Ensure empty field is in the bottom right position
+        if self.empty_field_pos != outer_last_field {
+            if self.empty_field_pos == inner_last_field {
+                self.apply_empty_field_moves_as_swaps(&[last_fields_cycle[0]]);
+            }
+
+            self.apply_empty_field_moves_as_swaps(&[outer_last_field]);
+        }
+
+        // Cycle last fields until the square is solved
+        while self.fields != self.goal_array {
+            self.apply_empty_field_moves_as_swaps(&last_fields_cycle)
+        }
+    }
+
+    /// Apply a path of moves as swaps.
+    ///
+    /// This records the swaps in `self.swaps` and updates the `self.fields`
+    /// and the `self.empty_field_pos` accordingly.
     fn apply_empty_field_moves_as_swaps(&mut self, moves: &[Coords<i32>]) {
         for step in moves {
             let step_idx: i32 = get_idx_from_coords(*step, self.width);
@@ -416,12 +423,30 @@ impl DacPuzzleSolver {
         }
     }
 
-    fn get_pos_of_val(&self, val: u8) -> Coords<i32> {
+    /// Get the position (`Coords<T>`) of a value
+    fn pos_of_value(&self, val: u8) -> Coords<i32> {
         let idx = get_idx_of_val(&self.fields, val);
         get_coords_from_idx(idx, self.width)
     }
+
+    /// Get the value at a given position
+    fn value_at_pos(&self, pos: Coords<i32>) -> u8 {
+        let idx: i32 = get_idx_from_coords(pos, self.width);
+        *self.fields.get(idx as usize).expect("Index should exist")
+    }
+
+    /// Get the goal value that a position should have in the solved puzzle
+    fn goal_value_of_pos(&self, pos: Coords<i32>) -> u8 {
+        let idx: usize = get_idx_from_coords::<i32, i32>(pos, self.width) as usize;
+        assert!(idx < self.goal_array.len());
+        *self.goal_array.get(idx).unwrap()
+    }
 }
 
+/// Identify the next step to move a field to on the way to the goal position.
+///
+/// Depending on whether we solve a row or a column, we move the field first
+/// horizontally or first vertically.
 fn identify_next_step_field(
     field_coords: Coords<i32>,
     delta_coords: Coords<i32>,
@@ -475,6 +500,7 @@ fn get_idx_of_val(slice: &[u8], value: u8) -> i32 {
         .expect("Expected to find value") as i32
 }
 
+/// Get the required moves to solve a prepared corner state of a column.
 fn get_fixed_corner_moves_vertically(empty_pos: Coords<i32>) -> Vec<Coords<i32>> {
     // Assumes this setup e.g. for column 0:
     //  0 1 2   0 1 2   0 1 2   0 1 2   0 1 2   0 1 2   0 1 2   0 1 2   0 1 2
@@ -530,6 +556,7 @@ fn get_fixed_corner_moves_vertically(empty_pos: Coords<i32>) -> Vec<Coords<i32>>
     ]
 }
 
+/// Get the required moves to solve a prepared corner state of a row.
 fn get_fixed_corner_moves_horizontally(empty_pos: Coords<i32>) -> Vec<Coords<i32>> {
     // Assumes this setup e.g. for row 0:
     // 0 1 2 X   0 1 2     0 1   2   0 1 X 2   0 1 X 2   0 1 X 2   0 1 X 2
