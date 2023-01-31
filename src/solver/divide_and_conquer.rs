@@ -63,13 +63,11 @@ impl DacPuzzleSolver {
                             row: working_row,
                             col,
                         };
-                        // let cur_idx: i32 = get_idx_from_coords(cur_coords, self.width);
                         let cur_field_value = self.get_field(cur_coords);
                         let goal_field = self.get_goal_value(cur_coords);
                         if cur_field_value != goal_field {
-                            let goal_idx = get_idx_of_val(&self.goal_array, goal_field);
-                            let field_idx = get_idx_of_val(&self.fields, goal_field);
-                            self.swap_field_to_goal_pos(field_idx, goal_idx);
+                            let value_cur_coords = self.get_pos_of_val(goal_field);
+                            self.swap_field_to_goal_pos(value_cur_coords, cur_coords);
                         }
                         self.forbidden_fields.insert(cur_coords);
                     }
@@ -116,11 +114,11 @@ impl DacPuzzleSolver {
     }
 
     /// Move a field given its index to a goal index.
-    fn swap_field_to_goal_pos(&mut self, mut field_idx: i32, goal_idx: i32) {
-        // let goal_array: Vec<u8> = (0..(fields.len() as u8 - 1)).into_iter().collect();
-        let goal_pos = get_coords_from_idx(goal_idx, self.width);
-        let mut field_coords = get_coords_from_idx(field_idx, self.width);
-
+    fn swap_field_to_goal_pos(
+        &mut self,
+        mut value_cur_pos: Coords<i32>,
+        value_goal_pos: Coords<i32>,
+    ) {
         // Determine the next target on the way to the goal position for the field
         // which we are moving. One iteration of the loop moves the empty field to
         // this target and then swaps the field with the empty field.
@@ -128,8 +126,8 @@ impl DacPuzzleSolver {
             // Identify next target field between field to move and goal field
             // TODO: Abstract
             let delta_coords = Coords {
-                row: goal_pos.row - field_coords.row,
-                col: goal_pos.col - field_coords.col,
+                row: value_goal_pos.row - value_cur_pos.row,
+                col: value_goal_pos.col - value_cur_pos.col,
             };
 
             // Check if the field we are moving reached the goal field and return
@@ -139,18 +137,18 @@ impl DacPuzzleSolver {
             }
 
             // For the upper row, move horizontal first
-            let target_coords = identify_next_step_field_horiz_first(field_coords, delta_coords);
+            let target_coords = identify_next_step_field_horiz_first(value_cur_pos, delta_coords);
 
             // Compute the moves required to bring the empty field to the target
             // field position and apply them.
             let moves =
-                self.compute_empty_field_moves(field_coords, target_coords, self.empty_field_pos);
+                self.compute_empty_field_moves(value_cur_pos, target_coords, self.empty_field_pos);
             self.apply_empty_field_moves_as_swaps(&moves);
 
             // Include swapping the empty field and the field we are moving
             let tmp = self.empty_field_pos;
-            self.apply_empty_field_moves_as_swaps(&[field_coords]);
-            field_coords = tmp;
+            self.apply_empty_field_moves_as_swaps(&[value_cur_pos]);
+            value_cur_pos = tmp;
         }
     }
 
@@ -177,8 +175,7 @@ impl DacPuzzleSolver {
             col: goal_pos.col,
         };
 
-        let field_idx = get_idx_of_val(&self.fields, field_value);
-        let goal_idx = get_idx_from_coords(goal_pos, self.width);
+        let value_cur_pos = self.get_pos_of_val(field_value);
 
         // It can happen that we enter this function in a state like this:
         // 0 1
@@ -204,7 +201,7 @@ impl DacPuzzleSolver {
         // 0 1 X
         // X X X
         // X   2
-        self.swap_field_to_goal_pos(field_idx, goal_idx);
+        self.swap_field_to_goal_pos(value_cur_pos, goal_pos);
 
         // Move the empty field in between the goal position of the last field
         // in the original row and its current position two fields down
@@ -212,7 +209,6 @@ impl DacPuzzleSolver {
         // 0 1 X
         // X X
         // X X 2
-        // let empty_field_pos = get_coords_from_idx(self.empty_field_idx, self.width);
         let moves =
             self.compute_empty_field_moves(goal_pos, empty_field_target_pos, self.empty_field_pos);
         self.apply_empty_field_moves_as_swaps(&moves);
@@ -316,6 +312,11 @@ impl DacPuzzleSolver {
             // Update empty field index
             self.empty_field_pos = *step;
         }
+    }
+
+    fn get_pos_of_val(&self, val: u8) -> Coords<i32> {
+        let idx = get_idx_of_val(&self.fields, val);
+        get_coords_from_idx(idx, self.width)
     }
 }
 
