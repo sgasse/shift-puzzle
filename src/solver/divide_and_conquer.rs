@@ -51,6 +51,44 @@ impl DacPuzzleSolver {
         *self.goal_array.get(idx).unwrap()
     }
 
+    fn solve_last_four_fields(&mut self) {
+        let last_fields_cycle = vec![
+            Coords {
+                row: self.height - 1,
+                col: self.width - 2,
+            },
+            Coords {
+                row: self.height - 2,
+                col: self.width - 2,
+            },
+            Coords {
+                row: self.height - 2,
+                col: self.width - 1,
+            },
+            Coords {
+                row: self.height - 1,
+                col: self.width - 1,
+            },
+        ];
+
+        let outer_last_field = last_fields_cycle[3];
+        let inner_last_field = last_fields_cycle[1];
+
+        // Ensure empty field is in position
+        if self.empty_field_pos != outer_last_field {
+            if self.empty_field_pos == inner_last_field {
+                self.apply_empty_field_moves_as_swaps(&[last_fields_cycle[0]]);
+            }
+
+            self.apply_empty_field_moves_as_swaps(&[outer_last_field]);
+        }
+
+        // Cycle last fields until we are in position
+        while self.fields != self.goal_array {
+            self.apply_empty_field_moves_as_swaps(&last_fields_cycle)
+        }
+    }
+
     pub fn solve_puzzle(&mut self) -> Vec<(usize, usize)> {
         let mut phase = SolverPhase::Row;
         let mut working_row = 0;
@@ -127,9 +165,6 @@ impl DacPuzzleSolver {
 
                     // Prepare next iteration step
                     working_col += 1;
-
-                    // TODO: Remove
-                    break 'row_col_loop;
                 }
             }
 
@@ -138,6 +173,9 @@ impl DacPuzzleSolver {
                 SolverPhase::Column => SolverPhase::Row,
             };
         }
+
+        self.solve_last_four_fields();
+
         self.swaps.clone()
     }
 
