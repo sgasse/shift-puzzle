@@ -85,23 +85,8 @@ impl DacPuzzleSolver {
                         }
                         self.forbidden_fields.insert(cur_pos);
                     }
-
-                    // Solve last field in the row
-                    let cur_pos = Coords {
-                        row: working_row,
-                        col: self.width - 1,
-                    };
-
-                    // Only enter the blind routine if the field is not yet in place
-                    let cur_pos_value = self.value_at_pos(cur_pos);
-                    let cur_pos_goal_value = self.goal_value_of_pos(cur_pos);
-                    if cur_pos_value != cur_pos_goal_value {
-                        self.swap_corner_fields_to_goal(cur_pos_goal_value, cur_pos, phase);
-                    }
-
-                    // Prepare next iteration step
-                    working_row += 1;
                 }
+
                 SolverPhase::Column => {
                     // Solve fields in the column starting at `working_row`
                     // until the second last.
@@ -119,29 +104,39 @@ impl DacPuzzleSolver {
                         }
                         self.forbidden_fields.insert(cur_pos);
                     }
-
-                    // Solve last field in the column
-                    let cur_pos = Coords {
-                        row: self.height - 1,
-                        col: working_col,
-                    };
-
-                    // Only enter the blind routine if the field is not yet in place
-                    let cur_pos_value = self.value_at_pos(cur_pos);
-                    let cur_pos_goal_value = self.goal_value_of_pos(cur_pos);
-                    if cur_pos_value != cur_pos_goal_value {
-                        self.swap_corner_fields_to_goal(cur_pos_goal_value, cur_pos, phase);
-                    }
-
-                    // Prepare next iteration step
-                    working_col += 1;
                 }
             }
 
-            phase = match phase {
-                SolverPhase::Row => SolverPhase::Column,
-                SolverPhase::Column => SolverPhase::Row,
+            // Solve last field in the row
+            let cur_pos = match phase {
+                SolverPhase::Row => Coords {
+                    row: working_row,
+                    col: self.width - 1,
+                },
+                SolverPhase::Column => Coords {
+                    row: self.height - 1,
+                    col: working_col,
+                },
             };
+
+            // Only enter the deterministic routine if the field is not yet in place
+            let cur_pos_value = self.value_at_pos(cur_pos);
+            let cur_pos_goal_value = self.goal_value_of_pos(cur_pos);
+            if cur_pos_value != cur_pos_goal_value {
+                self.swap_corner_fields_to_goal(cur_pos_goal_value, cur_pos, phase);
+            }
+
+            // Prepare next iteration step
+            match phase {
+                SolverPhase::Row => {
+                    working_row += 1;
+                    phase = SolverPhase::Column;
+                }
+                SolverPhase::Column => {
+                    working_col += 1;
+                    phase = SolverPhase::Row
+                }
+            }
         }
 
         self.solve_last_four_fields();
