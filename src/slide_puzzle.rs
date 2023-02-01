@@ -283,16 +283,23 @@ impl SlidePuzzle {
 
             // Calculate the solving swap sequence only when the button is
             // clicked, not on every re-render
-            let mut solver = DacPuzzleSolver::new(&fields, width as i32, height as i32);
-            let solve_sequence = solver.solve_puzzle();
-            log::info!("Solve sequence: {:?}", &solve_sequence);
+            match DacPuzzleSolver::new(&fields, width as i32, height as i32) {
+                Ok(mut solver) => match solver.solve_puzzle() {
+                    Ok(solve_sequence) => {
+                        log::info!("Solve sequence: {:?}", &solve_sequence);
 
-            for (i, swap) in solve_sequence.into_iter().enumerate() {
-                let swap_callback = swap_callback.clone();
-                let timeout = gloo_timers::callback::Timeout::new((i * 500) as u32, move || {
-                    swap_callback.emit((swap.0, swap.1));
-                });
-                timeout.forget();
+                        for (i, swap) in solve_sequence.into_iter().enumerate() {
+                            let swap_callback = swap_callback.clone();
+                            let timeout =
+                                gloo_timers::callback::Timeout::new((i * 500) as u32, move || {
+                                    swap_callback.emit((swap.0, swap.1));
+                                });
+                            timeout.forget();
+                        }
+                    }
+                    Err(err) => log::error!("Could not solve puzzle: {err}"),
+                },
+                Err(err) => log::error!("Error in divide&conquer solver: {err}"),
             }
         })
     }
