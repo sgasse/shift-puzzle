@@ -1,6 +1,9 @@
 use std::collections::{HashMap, VecDeque};
 
-use crate::board::{get_empty_field_idx, get_swappable_neighbours, initialize_fields};
+use crate::{
+    board::{get_idx_of_val, get_swappable_neighbours, initialize_fields},
+    Error,
+};
 
 pub trait AsStringHash<T> {
     fn as_string_hash(&self) -> String;
@@ -22,7 +25,11 @@ where
 /// time we see it is guaranteed to be cycle-free since we traverse the graph
 /// in a FIFO order. Therefore, we do not store subsequent (longer) paths to
 /// states which we already know.
-pub fn find_swap_order(fields: &[u8], width: usize, height: usize) -> Vec<(usize, usize)> {
+pub fn find_swap_order(
+    fields: &[u8],
+    width: usize,
+    height: usize,
+) -> Result<Vec<(usize, usize)>, Error> {
     // Determine initial values
     let fields = fields.to_owned();
     let initial_hash = fields.as_string_hash();
@@ -31,10 +38,10 @@ pub fn find_swap_order(fields: &[u8], width: usize, height: usize) -> Vec<(usize
 
     // Exit early if the puzzle is already solved
     if initial_hash == target_hash {
-        return Vec::with_capacity(0);
+        return Ok(Vec::with_capacity(0));
     }
 
-    let empty_field_idx = get_empty_field_idx(&fields);
+    let empty_field_idx = get_idx_of_val(&fields, u8::MAX)? as usize;
 
     // Map from a state hash to its parent hash and the last swap that led to
     // this state from the parent. We need to the swap information to trace back
@@ -68,7 +75,7 @@ pub fn find_swap_order(fields: &[u8], width: usize, height: usize) -> Vec<(usize
         let empty_field_idx = last_swap.1;
 
         // Determine all reachable next states
-        let swappable_neighbours = get_swappable_neighbours(width, height, last_swap.1);
+        let swappable_neighbours = get_swappable_neighbours(width, height, last_swap.1)?;
         let reachable_tuples: Vec<_> = swappable_neighbours
             .into_iter()
             .map(|neighbour_idx| {
@@ -97,7 +104,8 @@ pub fn find_swap_order(fields: &[u8], width: usize, height: usize) -> Vec<(usize
     // Extract the path of swaps from the initial position to the target if it
     // exists
     match parent_map.contains_key(&target_hash) {
-        false => Vec::with_capacity(0),
+        // TODO: Error?
+        false => Ok(Vec::with_capacity(0)),
         true => {
             // Trace back from target to beginning
             let mut swaps = Vec::new();
@@ -114,7 +122,7 @@ pub fn find_swap_order(fields: &[u8], width: usize, height: usize) -> Vec<(usize
 
             log::debug!("Number of swaps to solve: {}", swaps.len());
 
-            swaps.into_iter().rev().collect()
+            Ok(swaps.into_iter().rev().collect())
         }
     }
 }
@@ -125,23 +133,26 @@ mod test {
     use super::*;
 
     #[test]
-    fn test_find_swap_order_zero_moves() {
+    fn test_find_swap_order_zero_moves() -> Result<(), Error> {
         let fields = vec![0, 1, 2, u8::MAX];
-        let swap_order = find_swap_order(&fields, 2, 2);
+        let swap_order = find_swap_order(&fields, 2, 2)?;
         assert_eq!(swap_order, Vec::with_capacity(0));
+        Ok(())
     }
 
     #[test]
-    fn test_find_swap_order_one_move() {
+    fn test_find_swap_order_one_move() -> Result<(), Error> {
         let fields = vec![0, 1, u8::MAX, 2];
-        let swap_order = find_swap_order(&fields, 2, 2);
+        let swap_order = find_swap_order(&fields, 2, 2)?;
         assert_eq!(swap_order, vec![(2, 3)]);
+        Ok(())
     }
 
     #[test]
-    fn test_find_swap_order_four_swaps() {
+    fn test_find_swap_order_four_swaps() -> Result<(), Error> {
         let fields = vec![u8::MAX, 1, 2, 0, 3, 5, 6, 4, 7];
-        let swap_order = find_swap_order(&fields, 3, 3);
+        let swap_order = find_swap_order(&fields, 3, 3)?;
         assert_eq!(swap_order, vec![(0, 3), (3, 4), (4, 7), (7, 8)]);
+        Ok(())
     }
 }

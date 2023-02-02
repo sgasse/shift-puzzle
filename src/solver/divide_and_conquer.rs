@@ -8,7 +8,10 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use simple_error::bail;
 
 use crate::{
-    board::{get_coords_from_idx, get_idx_from_coords, in_bounds, initialize_fields, Coords},
+    board::{
+        get_coords_from_idx, get_idx_from_coords, get_idx_of_val, in_bounds, initialize_fields,
+        Coords,
+    },
     Error,
 };
 
@@ -455,8 +458,10 @@ impl DacPuzzleSolver {
         let idx: i32 = get_idx_from_coords(pos, self.width);
         self.fields
             .get(idx as usize)
-            .map(|v| *v)
-            .ok_or_else(|| simple_error::simple_error!("Index of value not found").into())
+            .copied()
+            .ok_or_else(|| -> Error {
+                simple_error::simple_error!("Index of value not found").into()
+            })
     }
 
     /// Get the goal value that a position should have in the solved puzzle
@@ -464,7 +469,7 @@ impl DacPuzzleSolver {
         let idx: usize = get_idx_from_coords::<i32, i32>(pos, self.width) as usize;
         self.goal_array
             .get(idx)
-            .map(|v| *v)
+            .copied()
             .ok_or_else(|| simple_error::simple_error!("Index of goal value not found").into())
     }
 }
@@ -514,17 +519,6 @@ fn identify_next_step_field(
     }
 
     field_coords
-}
-
-/// Get the index of a value in a slice.
-///
-/// This is a convenience wrapper and panics if the value cannot be found.
-fn get_idx_of_val(slice: &[u8], value: u8) -> Result<i32, Error> {
-    slice
-        .iter()
-        .position(|&v| v == value)
-        .map(|v| v as i32)
-        .ok_or_else(|| simple_error::simple_error!("Value not found").into())
 }
 
 /// Get the required moves to solve a prepared corner state of a column.
@@ -647,32 +641,53 @@ mod test {
     use super::*;
 
     #[test]
-    fn test_first_field_correct_4_by_4() {
-        let mut test_fields = vec![8, 5, 6, 1, 14, 4, 7, 2, 0, 13, 11, 9, 255, 12, 10, 3];
+    fn test_solving_regular_4_by_4() -> Result<(), Error> {
+        let mut fields = vec![8, 5, 6, 1, 14, 4, 7, 2, 0, 13, 11, 9, 255, 12, 10, 3];
+        let target_fields = initialize_fields(fields.len());
 
-        let mut solver = DacPuzzleSolver::new(&test_fields, 4, 4).unwrap();
-        let swaps = solver.solve_puzzle().unwrap();
+        let mut solver = DacPuzzleSolver::new(&fields, 4, 4)?;
+        let swaps = solver.solve_puzzle()?;
 
         for swap in swaps {
-            test_fields.swap(swap.0, swap.1);
+            fields.swap(swap.0, swap.1);
         }
 
-        assert_eq!(test_fields.get(0), Some(&0));
+        assert_eq!(fields, target_fields);
+
+        Ok(())
     }
 
     #[test]
-    fn test_corner_case_corner_solved() {
-        let mut test_fields = vec![2, 1, 5, 3, 0, 7, 255, 6, 4];
+    fn test_corner_case_corner_presolved_row_end() -> Result<(), Error> {
+        let mut fields = vec![2, 1, 5, 3, 0, 7, 255, 6, 4];
+        let target_fields = initialize_fields(fields.len());
 
-        let mut solver = DacPuzzleSolver::new(&test_fields, 3, 3).unwrap();
-        let swaps = solver.solve_puzzle().unwrap();
+        let mut solver = DacPuzzleSolver::new(&fields, 3, 3)?;
+        let swaps = solver.solve_puzzle()?;
 
         for swap in swaps {
-            test_fields.swap(swap.0, swap.1);
+            fields.swap(swap.0, swap.1);
         }
 
-        assert_eq!(test_fields.get(0), Some(&0));
+        assert_eq!(fields, target_fields);
 
-        // Should have parent error [2, 1, 5, 7, 3, 4, 0, 6, 255]
+        Ok(())
+    }
+
+    #[test]
+    fn test_corner_case() -> Result<(), Error> {
+        let mut fields = vec![2, 1, 5, 7, 3, 4, 0, 6, 255];
+        let target_fields = initialize_fields(fields.len());
+
+        let mut solver = DacPuzzleSolver::new(&fields, 3, 3)?;
+        let swaps = solver.solve_puzzle()?;
+
+        for swap in swaps {
+            fields.swap(swap.0, swap.1);
+        }
+
+        assert_eq!(fields, target_fields);
+
+        Ok(())
     }
 }

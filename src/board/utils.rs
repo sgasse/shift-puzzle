@@ -1,3 +1,5 @@
+use crate::Error;
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct Coords<T> {
     pub row: T,
@@ -72,4 +74,15 @@ where
 {
     let t_zero: T = T::default();
     t_zero <= row && row < height && t_zero <= col && col < width
+}
+
+/// Get the index of a value in a slice.
+///
+/// This is a convenience wrapper and panics if the value cannot be found.
+pub fn get_idx_of_val(slice: &[u8], value: u8) -> Result<i32, Error> {
+    slice
+        .iter()
+        .position(|&v| v == value)
+        .map(|v| v as i32)
+        .ok_or_else(|| simple_error::simple_error!("Value not found").into())
 }
