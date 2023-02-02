@@ -139,6 +139,9 @@ impl Component for SlidePuzzle {
         let touch_start_callback = ctx.link().callback(SlidePuzzleMsg::TouchStartCoords);
         let touch_end_callback = ctx.link().callback(SlidePuzzleMsg::TouchEndCoords);
 
+        // Adjust field size depending on puzzle size
+        let field_size = 12 / usize::max(self.width, self.height);
+
         html! {
             <>
                 <PuzzleBoard
@@ -146,7 +149,7 @@ impl Component for SlidePuzzle {
                     on_click={field_click_callback}
                     width={self.width}
                     height={self.height}
-                    field_size={4}
+                    field_size={field_size}
                     field_unit={"rem"}
                     background_url={self.background_url.clone()}
                     on_touch_start={touch_start_callback}
@@ -193,14 +196,18 @@ impl SlidePuzzle {
             let mut fields = fields.clone();
             // Calculate a shuffle sequence only when the button is clicked, not
             // on every re-render
-            let shuffle_sequence = get_shuffle_sequence(width, height, empty_field_idx, 20);
-            log::info!("Shuffle sequence: {:?}", &shuffle_sequence);
+            match get_shuffle_sequence(width, height, empty_field_idx, 20) {
+                Ok(shuffle_sequence) => {
+                    log::info!("Shuffle sequence: {:?}", &shuffle_sequence);
 
-            for swap in shuffle_sequence {
-                fields.swap(swap.0, swap.1);
+                    for swap in shuffle_sequence {
+                        fields.swap(swap.0, swap.1);
+                    }
+
+                    swap_callback.emit(fields);
+                }
+                Err(err) => log::error!("Error in quick swapping: {err}"),
             }
-
-            swap_callback.emit(fields);
         })
     }
 
@@ -219,17 +226,22 @@ impl SlidePuzzle {
         Callback::from(move |_| {
             // Calculate a shuffle sequence only when the button is clicked, not
             // on every re-render
-            let shuffle_sequence = get_shuffle_sequence(width, height, empty_field_idx, 20);
-            log::info!("Shuffle sequence: {:?}", &shuffle_sequence);
+            match get_shuffle_sequence(width, height, empty_field_idx, 20) {
+                Ok(shuffle_sequence) => {
+                    log::info!("Shuffle sequence: {:?}", &shuffle_sequence);
 
-            let swap_callback = swap_callback.clone();
+                    let swap_callback = swap_callback.clone();
 
-            for (i, swap) in shuffle_sequence.into_iter().enumerate() {
-                let swap_callback = swap_callback.clone();
-                let timeout = gloo_timers::callback::Timeout::new((i * 250) as u32, move || {
-                    swap_callback.emit((swap.0, swap.1));
-                });
-                timeout.forget();
+                    for (i, swap) in shuffle_sequence.into_iter().enumerate() {
+                        let swap_callback = swap_callback.clone();
+                        let timeout =
+                            gloo_timers::callback::Timeout::new((i * 250) as u32, move || {
+                                swap_callback.emit((swap.0, swap.1));
+                            });
+                        timeout.forget();
+                    }
+                }
+                Err(err) => log::error!("Error in granular swapping: {err}"),
             }
         })
     }
@@ -252,15 +264,20 @@ impl SlidePuzzle {
 
             // Calculate the solving swap sequence only when the button is
             // clicked, not on every re-render
-            let solve_sequence = find_swap_order(&fields, width, height);
-            log::info!("Solve sequence: {:?}", &solve_sequence);
+            match find_swap_order(&fields, width, height) {
+                Ok(solve_sequence) => {
+                    log::info!("Solve sequence: {:?}", &solve_sequence);
 
-            for (i, swap) in solve_sequence.into_iter().enumerate() {
-                let swap_callback = swap_callback.clone();
-                let timeout = gloo_timers::callback::Timeout::new((i * 500) as u32, move || {
-                    swap_callback.emit((swap.0, swap.1));
-                });
-                timeout.forget();
+                    for (i, swap) in solve_sequence.into_iter().enumerate() {
+                        let swap_callback = swap_callback.clone();
+                        let timeout =
+                            gloo_timers::callback::Timeout::new((i * 500) as u32, move || {
+                                swap_callback.emit((swap.0, swap.1));
+                            });
+                        timeout.forget();
+                    }
+                }
+                Err(err) => log::error!("Error finding optimal solve sequence: {err}"),
             }
         })
     }

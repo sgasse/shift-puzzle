@@ -7,6 +7,8 @@ pub use slide::*;
 use web_sys::TouchEvent;
 use yew::prelude::*;
 
+use crate::Error;
+
 #[derive(Properties, PartialEq)]
 pub struct PuzzleBoardProps {
     pub fields: Vec<u8>,
@@ -201,7 +203,7 @@ pub fn get_shuffle_sequence(
     height: usize,
     mut empty_field_idx: usize,
     num_swaps: usize,
-) -> Vec<(usize, usize)> {
+) -> Result<Vec<(usize, usize)>, Error> {
     let mut swaps = Vec::with_capacity(num_swaps);
 
     // We want to avoid swapping fields back and forth like (2, 1), (1, 2)
@@ -210,26 +212,33 @@ pub fn get_shuffle_sequence(
     let mut prev_empty_field_idx = empty_field_idx;
 
     for _ in 0..num_swaps {
-        let swappable_neighbours: Vec<_> = get_swappable_neighbours(width, height, empty_field_idx)
-            .into_iter()
-            .filter(|&element| element != prev_empty_field_idx)
-            .collect();
+        let swappable_neighbours: Vec<_> =
+            get_swappable_neighbours(width, height, empty_field_idx)?
+                .into_iter()
+                .filter(|&element| element != prev_empty_field_idx)
+                .collect();
         let chosen_neighbour = swappable_neighbours
             .choose(&mut rand::thread_rng())
-            .expect("Neighbour");
+            .ok_or_else(|| -> Error {
+                simple_error::simple_error!("No random neighbour to choose").into()
+            })?;
         swaps.push((empty_field_idx, *chosen_neighbour));
         prev_empty_field_idx = empty_field_idx;
         empty_field_idx = *chosen_neighbour;
     }
 
-    swaps
+    Ok(swaps)
 }
 
 /// Get the indices of neighbours that can be swapped with the empty field.
-pub fn get_swappable_neighbours(width: usize, height: usize, empty_field_idx: usize) -> Vec<usize> {
+pub fn get_swappable_neighbours(
+    width: usize,
+    height: usize,
+    empty_field_idx: usize,
+) -> Result<Vec<usize>, Error> {
     let (row, col): (usize, usize) = get_row_col_from_idx(empty_field_idx, width);
 
-    [(-1, 0), (1, 0), (0, -1), (0, 1)]
+    Ok([(-1, 0), (1, 0), (0, -1), (0, 1)]
         .iter()
         .filter_map(|(delta_row, delta_col)| {
             let neighbour_row = row as isize + delta_row;
@@ -248,5 +257,5 @@ pub fn get_swappable_neighbours(width: usize, height: usize, empty_field_idx: us
                 false => None,
             }
         })
-        .collect()
+        .collect())
 }
