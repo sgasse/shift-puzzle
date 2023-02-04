@@ -1,3 +1,5 @@
+//! Slide puzzle frontend and solvers.
+//!
 pub mod board;
 pub mod expander;
 pub mod settings;

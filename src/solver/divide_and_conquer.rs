@@ -46,7 +46,7 @@ impl DacPuzzleSolver {
             bail!("DacPuzzleSolver: Puzzles below 3x3 are not supported");
         }
 
-        let empty_field_idx = get_idx_of_val(fields, u8::MAX)?;
+        let empty_field_idx = get_idx_of_val(fields, u8::MAX)? as i32;
         let empty_field_pos = get_coords_from_idx(empty_field_idx, width);
 
         Ok(Self {
@@ -449,7 +449,7 @@ impl DacPuzzleSolver {
 
     /// Get the position (`Coords<T>`) of a value
     fn pos_of_value(&self, val: u8) -> Result<Coords<i32>, Error> {
-        let idx = get_idx_of_val(&self.fields, val)?;
+        let idx = get_idx_of_val(&self.fields, val)? as i32;
         Ok(get_coords_from_idx(idx, self.width))
     }
 
@@ -466,7 +466,7 @@ impl DacPuzzleSolver {
 
     /// Get the goal value that a position should have in the solved puzzle
     fn goal_value_of_pos(&self, pos: Coords<i32>) -> Result<u8, Error> {
-        let idx: usize = get_idx_from_coords::<i32, i32>(pos, self.width) as usize;
+        let idx: usize = get_idx_from_coords::<i32>(pos, self.width) as usize;
         self.goal_array
             .get(idx)
             .copied()

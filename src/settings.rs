@@ -1,3 +1,5 @@
+//! Settings module.
+//!
 use yew::prelude::*;
 
 #[derive(Properties, PartialEq)]
