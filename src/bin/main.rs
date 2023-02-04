@@ -1,3 +1,5 @@
+//! Frontend entrypoint.
+//!
 use slide_puzzle::slide_puzzle::SlidePuzzle;
 use yew::prelude::*;
 

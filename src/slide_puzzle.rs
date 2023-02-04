@@ -1,8 +1,10 @@
+//! Slize puzzle component with callbacks and settings.
+//!
 use yew::prelude::*;
 
 use crate::{
     board::{
-        get_empty_field_idx, get_shuffle_sequence, get_touch_direction, handle_field_click,
+        get_idx_of_val, get_shuffle_sequence, get_touch_direction, handle_field_click,
         handle_touch_move, initialize_fields, PuzzleBoard,
     },
     expander::Expander,
@@ -110,8 +112,18 @@ impl Component for SlidePuzzle {
             SlidePuzzleMsg::TouchEndCoords((x_end, y_end)) => match self.touch_start_coords {
                 Some((x_start, y_start)) => {
                     if let Some(direction) = get_touch_direction(x_start, y_start, x_end, y_end) {
-                        let should_rerender =
-                            handle_touch_move(&mut self.fields, self.width, self.height, direction);
+                        let should_rerender = match handle_touch_move(
+                            &mut self.fields,
+                            self.width,
+                            self.height,
+                            direction,
+                        ) {
+                            Ok(rerender) => rerender,
+                            Err(err) => {
+                                log::error!("Error in handling touch move: {err}");
+                                false
+                            }
+                        };
                         self.touch_start_coords = None;
                         return should_rerender;
                     }
@@ -188,7 +200,15 @@ impl SlidePuzzle {
 
         // Locally-bind values of self that we want to pass into the closure
         let fields = self.fields.clone();
-        let empty_field_idx = get_empty_field_idx(&self.fields);
+        let empty_field_idx = match get_idx_of_val(&self.fields, u8::MAX) {
+            Ok(idx) => idx,
+            Err(err) => {
+                return Callback::from(move |_| {
+                    log::error!("Could not find empty field idx: {err}");
+                });
+            }
+        };
+
         let width = self.width;
         let height = self.height;
 
@@ -219,7 +239,15 @@ impl SlidePuzzle {
         });
 
         // Locally-bind values of self that we want to pass into the closure
-        let empty_field_idx = get_empty_field_idx(&self.fields);
+        let empty_field_idx = match get_idx_of_val(&self.fields, u8::MAX) {
+            Ok(idx) => idx,
+            Err(err) => {
+                return Callback::from(move |_| {
+                    log::error!("Could not find empty field idx: {err}");
+                });
+            }
+        };
+
         let width = self.width;
         let height = self.height;
 

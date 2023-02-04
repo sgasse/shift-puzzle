@@ -1,3 +1,5 @@
+//! Expandable area in the frontend.
+//!
 use yew::prelude::*;
 
 #[derive(Properties, Debug, PartialEq)]

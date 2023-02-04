@@ -1,3 +1,8 @@
+//! Naive, optimal puzzle solver.
+//!
+//! This runs a breath-first-search in the state space of possible slides until
+//! finding the final state. The state space is built on the fly.
+//!
 use std::collections::{HashMap, VecDeque};
 
 use crate::{
@@ -41,7 +46,7 @@ pub fn find_swap_order(
         return Ok(Vec::with_capacity(0));
     }
 
-    let empty_field_idx = get_idx_of_val(&fields, u8::MAX)? as usize;
+    let empty_field_idx = get_idx_of_val(&fields, u8::MAX)?;
 
     // Map from a state hash to its parent hash and the last swap that led to
     // this state from the parent. We need to the swap information to trace back

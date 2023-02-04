@@ -1,3 +1,5 @@
+//! Configurable board.
+//!
 mod utils;
 pub use utils::*;
 

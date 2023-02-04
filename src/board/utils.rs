@@ -1,17 +1,12 @@
+//! Utility functions for interacting with the board.
+//!
 use crate::Error;
 
+/// Coordinates consisting of row and column.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct Coords<T> {
     pub row: T,
     pub col: T,
-}
-
-/// Determine the index of the empty field (`u8::MAX`) in a slice of fields.
-pub fn get_empty_field_idx(fields: &[u8]) -> usize {
-    fields
-        .iter()
-        .position(|&field| field == u8::MAX)
-        .expect("Should have empty field as u8::MAX")
 }
 
 /// Get the left/top coordinates based on the index of a board field.
@@ -37,15 +32,15 @@ where
 }
 
 /// Get the index into a linear array based on row/column coordinates.
-pub fn get_idx_from_row_col<T, U>(row: T, col: T, width: T) -> U
+pub fn get_idx_from_row_col<T>(row: T, col: T, width: T) -> T
 where
     T: std::ops::Mul<Output = T>,
     T: std::ops::Add<Output = T>,
-    U: std::convert::From<T>,
 {
-    row.mul(width).add(col).into()
+    row.mul(width).add(col)
 }
 
+/// Get the coordinates matching an index.
 pub fn get_coords_from_idx<U>(idx: U, width: U) -> Coords<U>
 where
     U: std::ops::Div<Output = U>,
@@ -56,11 +51,11 @@ where
     Coords { row, col }
 }
 
-pub fn get_idx_from_coords<T, U>(coords: Coords<T>, width: T) -> U
+/// Get the index matching a coordinate pair.
+pub fn get_idx_from_coords<T>(coords: Coords<T>, width: T) -> T
 where
     T: std::ops::Mul<Output = T>,
     T: std::ops::Add<Output = T>,
-    U: std::convert::From<T>,
 {
     get_idx_from_row_col(coords.row, coords.col, width)
 }
@@ -79,10 +74,9 @@ where
 /// Get the index of a value in a slice.
 ///
 /// This is a convenience wrapper and panics if the value cannot be found.
-pub fn get_idx_of_val(slice: &[u8], value: u8) -> Result<i32, Error> {
+pub fn get_idx_of_val(slice: &[u8], value: u8) -> Result<usize, Error> {
     slice
         .iter()
         .position(|&v| v == value)
-        .map(|v| v as i32)
-        .ok_or_else(|| simple_error::simple_error!("Value not found").into())
+        .ok_or_else(|| -> Error { simple_error::simple_error!("Value not found").into() })
 }

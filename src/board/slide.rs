@@ -1,4 +1,10 @@
-use crate::board::{get_empty_field_idx, get_idx_from_row_col, get_row_col_from_idx, in_bounds};
+//! Slide interaction functions.
+//!
+use super::get_idx_of_val;
+use crate::{
+    board::{get_idx_from_row_col, get_row_col_from_idx, in_bounds},
+    Error,
+};
 
 pub enum TouchMoveDirection {
     Left,
@@ -81,8 +87,8 @@ pub fn handle_touch_move(
     width: usize,
     height: usize,
     direction: TouchMoveDirection,
-) -> bool {
-    let empty_field_idx = get_empty_field_idx(fields);
+) -> Result<bool, Error> {
+    let empty_field_idx = get_idx_of_val(fields, u8::MAX)?;
     let (empty_row, empty_col): (usize, usize) = get_row_col_from_idx(empty_field_idx, width);
     let (empty_row, empty_col) = (empty_row as i32, empty_col as i32);
 
@@ -100,9 +106,9 @@ pub fn handle_touch_move(
     if in_bounds(swap_row, swap_col, width as i32, height as i32) {
         let swap_idx: i32 = get_idx_from_row_col(swap_row, swap_col, width as i32);
         fields.swap(empty_field_idx, swap_idx as usize);
-        return true;
+        return Ok(true);
     }
 
     // The candidate was not in bounds -> do nothing
-    false
+    Ok(false)
 }
