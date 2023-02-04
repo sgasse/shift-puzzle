@@ -2,7 +2,9 @@
 
 Implementation of a slide-puzzle game with random puzzles and two solver
 algorithms. Powered by the frontend framework [`yew`][yew] (compiled to
-[`Wasm`]) and written in Rust.
+[`Wasm`][wasm]) and written in Rust.
+
+![Example](./assets/slide_puzzle.gif)
 
 ## Overview
 
@@ -140,3 +142,5 @@ is quite complicated and tedious:
   of the empty field (excluding fixed fields and the field to move itself).
 
 [d_and_c_algorithm_explained]: https://www.kopf.com.br/kaplof/how-to-solve-any-slide-puzzle-regardless-of-its-size/
+[yew]: https://yew.rs/
+[wasm]: https://webassembly.org/
