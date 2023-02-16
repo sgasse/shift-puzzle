@@ -1,15 +1,15 @@
 //! Configurable board.
 //!
-mod utils;
-pub use utils::*;
-
 mod slide;
 use rand::seq::SliceRandom;
 pub use slide::*;
 use web_sys::TouchEvent;
 use yew::prelude::*;
 
-use crate::Error;
+use crate::{
+    utils::{get_left_top, get_swappable_neighbours},
+    Error,
+};
 
 #[derive(Properties, PartialEq)]
 pub struct PuzzleBoardProps {
@@ -189,13 +189,6 @@ where
         .collect()
 }
 
-pub fn initialize_fields(num_elements: usize) -> Vec<u8> {
-    let num_elements = usize::min(num_elements, u8::MAX as usize) as u8;
-    let mut fields: Vec<_> = (0..(num_elements - 1)).collect();
-    fields.push(u8::MAX);
-    fields
-}
-
 /// Get a sequence of valid semi-random shuffles.
 ///
 /// We prevent fields from being shuffled back and forth, which breaks total
@@ -230,34 +223,4 @@ pub fn get_shuffle_sequence(
     }
 
     Ok(swaps)
-}
-
-/// Get the indices of neighbours that can be swapped with the empty field.
-pub fn get_swappable_neighbours(
-    width: usize,
-    height: usize,
-    empty_field_idx: usize,
-) -> Result<Vec<usize>, Error> {
-    let (row, col): (usize, usize) = get_row_col_from_idx(empty_field_idx, width);
-
-    Ok([(-1, 0), (1, 0), (0, -1), (0, 1)]
-        .iter()
-        .filter_map(|(delta_row, delta_col)| {
-            let neighbour_row = row as isize + delta_row;
-            let neighbour_col = col as isize + delta_col;
-            match in_bounds(
-                neighbour_row,
-                neighbour_col,
-                width as isize,
-                height as isize,
-            ) {
-                true => {
-                    let idx: isize =
-                        get_idx_from_row_col(neighbour_row, neighbour_col, width as isize);
-                    Some(idx as usize)
-                }
-                false => None,
-            }
-        })
-        .collect())
 }

@@ -4,12 +4,13 @@ use yew::prelude::*;
 
 use crate::{
     board::{
-        get_idx_of_val, get_shuffle_sequence, get_touch_direction, handle_field_click,
-        handle_touch_move, initialize_fields, PuzzleBoard,
+        get_shuffle_sequence, get_touch_direction, handle_field_click, handle_touch_move,
+        PuzzleBoard,
     },
     expander::Expander,
     settings::SettingsBlock,
     solver::{divide_and_conquer::DacPuzzleSolver, optimal::find_swap_order},
+    utils::{get_idx_of_val, initialize_fields},
 };
 
 #[derive(Debug)]

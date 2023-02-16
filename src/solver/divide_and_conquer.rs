@@ -8,7 +8,7 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use simple_error::bail;
 
 use crate::{
-    board::{
+    utils::{
         get_coords_from_idx, get_idx_from_coords, get_idx_of_val, in_bounds, initialize_fields,
         Coords,
     },

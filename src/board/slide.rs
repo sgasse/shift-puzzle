@@ -1,8 +1,7 @@
 //! Slide interaction functions.
 //!
-use super::get_idx_of_val;
 use crate::{
-    board::{get_idx_from_row_col, get_row_col_from_idx, in_bounds},
+    utils::{get_idx_from_row_col, get_idx_of_val, get_row_col_from_idx, in_bounds},
     Error,
 };
 

@@ -6,7 +6,7 @@
 use std::collections::{HashMap, VecDeque};
 
 use crate::{
-    board::{get_idx_of_val, get_swappable_neighbours, initialize_fields},
+    utils::{get_idx_of_val, get_swappable_neighbours, initialize_fields},
     Error,
 };
 

@@ -5,5 +5,6 @@ pub mod expander;
 pub mod settings;
 pub mod slide_puzzle;
 pub mod solver;
+pub mod utils;
 
 pub type Error = Box<dyn std::error::Error>;
