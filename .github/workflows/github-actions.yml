@@ -4,7 +4,6 @@ on:
   push:
     branches: [ "main" ]
   pull_request:
-    branches: [ "main" ]
 
 permissions:
   contents: write
@@ -47,6 +46,10 @@ jobs:
       - name: Build application
         run: |
           trunk build --release --public-url slide-puzzle
+
+      - name: Benchmark
+        run: |
+          cargo bench
 
       - name: List contents
         run: ls -la
