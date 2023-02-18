@@ -12,32 +12,58 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+
+  lint:
+    name: clippy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: nightly
+          components: clippy
+          targets: wasm32-unknown-unknown
+      - run: cargo +nightly clippy --no-deps -- -D warnings
+
+  format:
+    name: rustfmt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: nightly
+          components: rustfmt
+          targets: wasm32-unknown-unknown
+      - run: cargo +nightly fmt --check
+
+  test:
+    name: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - run: cargo test
+
+  benchmark:
+    name: benchmark
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - run: cargo bench
+
   build_and_deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-
-      - name: Update local Rust toolchain
-        run: |
-          rustup update
-          rustup install nightly
-          rustup component add clippy rustfmt --toolchain nightly
-
-      - name: Get toolchain info
-        run: |
-          cargo --version --verbose
-          rustc --version
-          cargo clippy --version
-
-      - name: Add WASM target
-        run: |
-          rustup target add wasm32-unknown-unknown
-
-      - name: Lint
-        run: |
-          cargo +nightly fmt -- --check
-          cargo +nightly clippy -- --no-deps -D warnings
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
 
       - name: Install trunk
         run: |
@@ -46,10 +72,6 @@ jobs:
       - name: Build application
         run: |
           trunk build --release --public-url slide-puzzle
-
-      - name: Benchmark
-        run: |
-          cargo bench
 
       - name: List contents
         run: ls -la
