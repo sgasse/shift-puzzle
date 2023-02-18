@@ -4,9 +4,12 @@
 //! finding the final state. The state space is built on the fly.
 //!
 use std::{
-    collections::{hash_map::DefaultHasher, HashMap, VecDeque},
+    collections::VecDeque,
     hash::{Hash, Hasher},
 };
+
+use fnv::FnvHasher;
+use rustc_hash::FxHashMap;
 
 use crate::{
     utils::{get_idx_of_val, get_swappable_neighbours, initialize_fields},
@@ -22,7 +25,9 @@ where
     T: std::hash::Hash,
 {
     fn hashed(&self) -> u64 {
-        let mut s = DefaultHasher::new();
+        // FnvHasher has a lower collision probability than FxHasher and we are
+        // hashing up to millions of states
+        let mut s = FnvHasher::with_key(1234);
         self.hash(&mut s);
         s.finish()
     }
@@ -56,7 +61,7 @@ pub fn find_swap_order(
     // Map from a state hash to its parent hash and the last swap that led to
     // this state from the parent. We need to the swap information to trace back
     // a path from the start to the target later.
-    let mut parent_map = HashMap::new();
+    let mut parent_map = FxHashMap::default();
 
     // Hold tuples of (state, state_hash parent_hash, last_swap)
     let mut states_to_explore = VecDeque::from([(

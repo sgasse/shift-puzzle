@@ -4,10 +4,12 @@ version = "0.2.2"
 edition = "2021"
 
 [dependencies]
+fnv = "1.0.7"
 getrandom = { version = "0.2.8", features = ["js"] }
 gloo-timers = "0.2.6"
 log = "0.4.17"
 rand = "0.8.5"
+rustc-hash = "1.1.0"
 simple-error = "0.2.3"
 wasm-bindgen = "0.2.84"
 wasm-logger = "0.2.0"
