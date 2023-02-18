@@ -19,3 +19,11 @@ web-sys = { version = "0.3.61", features = [
     "TouchList",
 ] }
 yew = { git = "https://github.com/yewstack/yew/", features = ["csr"] }
+
+[dev-dependencies]
+criterion = "0.4.0"
+lazy_static = "1.4.0"
+
+[[bench]]
+name = "optimal_solver_benchmark"
+harness = false

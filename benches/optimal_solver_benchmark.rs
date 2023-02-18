@@ -1,0 +1,63 @@
+use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use slide_puzzle::solver::optimal::find_swap_order;
+
+lazy_static::lazy_static! {
+    static ref PUZZLE_3X3_16: (Vec<u8>, usize, usize) = {
+        (vec![255, 5, 2, 1, 0, 7, 6, 4, 3], 3, 3)
+    };
+    static ref PUZZLE_4X4_10: (Vec<u8>, usize, usize) = {
+        (vec![0, 1, 2, 3, 4, 5, 6, 7, 12, 8, 10, 11, 13, 14, 9, 255], 4, 4)
+    };
+    static ref PUZZLE_4X4_17: (Vec<u8>, usize, usize) = {
+        (vec![0, 5, 1, 3, 8, 4, 2, 11, 12, 10, 7, 6, 9, 13, 255, 14], 4, 4)
+    };
+    static ref PUZZLE_4X4_20: (Vec<u8>, usize, usize) = {
+        (vec![1, 2, 255, 5, 0, 9, 4, 3, 12, 10, 7, 6, 13, 8, 14, 11], 4, 4)
+    };
+}
+
+fn criterion_benchmark(c: &mut Criterion) {
+    let mut group100 = c.benchmark_group("100 samples");
+    group100.sample_size(100);
+
+    // 9.8k evaluations
+    group100.bench_function("3x3_16_steps", |b| {
+        b.iter(|| {
+            find_swap_order(
+                black_box(&PUZZLE_3X3_16.0),
+                black_box(PUZZLE_3X3_16.1),
+                black_box(PUZZLE_3X3_16.2),
+            )
+        })
+    });
+
+    // 2.6k evaluations
+    group100.bench_function("4x4_10_steps", |b| {
+        b.iter(|| {
+            find_swap_order(
+                black_box(&PUZZLE_4X4_10.0),
+                black_box(PUZZLE_4X4_10.1),
+                black_box(PUZZLE_4X4_10.2),
+            )
+        })
+    });
+    group100.finish();
+
+    let mut group_slow = c.benchmark_group("10 samples");
+    group_slow.sample_size(10);
+
+    // // 642k evaluations
+    group_slow.bench_function("4x4_17_steps", |b| {
+        b.iter(|| {
+            find_swap_order(
+                black_box(&PUZZLE_4X4_17.0),
+                black_box(PUZZLE_4X4_17.1),
+                black_box(PUZZLE_4X4_17.2),
+            )
+        })
+    });
+    group_slow.finish();
+}
+
+criterion_group!(benches, criterion_benchmark);
+criterion_main!(benches);
