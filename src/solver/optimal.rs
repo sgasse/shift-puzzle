@@ -3,23 +3,28 @@
 //! This runs a breath-first-search in the state space of possible slides until
 //! finding the final state. The state space is built on the fly.
 //!
-use std::collections::{HashMap, VecDeque};
+use std::{
+    collections::{hash_map::DefaultHasher, HashMap, VecDeque},
+    hash::{Hash, Hasher},
+};
 
 use crate::{
     utils::{get_idx_of_val, get_swappable_neighbours, initialize_fields},
     Error,
 };
 
-pub trait AsStringHash<T> {
-    fn as_string_hash(&self) -> String;
+pub trait Hashed<T> {
+    fn hashed(&self) -> u64;
 }
 
-impl<T> AsStringHash<T> for Vec<T>
+impl<T> Hashed<T> for Vec<T>
 where
-    T: core::fmt::Debug,
+    T: std::hash::Hash,
 {
-    fn as_string_hash(&self) -> String {
-        format!("{:?}", &self)
+    fn hashed(&self) -> u64 {
+        let mut s = DefaultHasher::new();
+        self.hash(&mut s);
+        s.finish()
     }
 }
 
@@ -37,9 +42,9 @@ pub fn find_swap_order(
 ) -> Result<Vec<(usize, usize)>, Error> {
     // Determine initial values
     let fields = fields.to_owned();
-    let initial_hash = fields.as_string_hash();
+    let initial_hash = fields.hashed();
     let target_fields = initialize_fields(fields.len());
-    let target_hash = target_fields.as_string_hash();
+    let target_hash = target_fields.hashed();
 
     // Exit early if the puzzle is already solved
     if initial_hash == target_hash {
@@ -56,9 +61,9 @@ pub fn find_swap_order(
     // Hold tuples of (state, state_hash parent_hash, last_swap)
     let mut states_to_explore = VecDeque::from([(
         fields,
-        initial_hash.clone(),
+        initial_hash,
         // The parent hash of the first state is never used/considered
-        "".to_owned(),
+        0,
         (empty_field_idx, empty_field_idx),
     )]);
 
@@ -69,7 +74,7 @@ pub fn find_swap_order(
         num_iterations += 1;
 
         // Add state hash with parent and last swap to map
-        parent_map.insert(cur_hash.clone(), (parent_hash, last_swap));
+        parent_map.insert(cur_hash, (parent_hash, last_swap));
 
         // If the state is the target state, break
         if cur_hash == target_hash {
@@ -87,10 +92,10 @@ pub fn find_swap_order(
                 let mut next_fields = cur_fields.clone();
                 let next_swap = (empty_field_idx, neighbour_idx);
                 next_fields.swap(next_swap.0, next_swap.1);
-                let next_fields_hash = next_fields.as_string_hash();
+                let next_fields_hash = next_fields.hashed();
 
                 // (fields, fields_hash, parent_hash, last_swap)
-                (next_fields, next_fields_hash, cur_hash.clone(), next_swap)
+                (next_fields, next_fields_hash, cur_hash, next_swap)
             })
             .collect();
 
@@ -122,7 +127,7 @@ pub fn find_swap_order(
                     break;
                 }
 
-                next_hash = parent_hash.clone();
+                next_hash = *parent_hash;
             }
 
             log::debug!("Number of swaps to solve: {}", swaps.len());
