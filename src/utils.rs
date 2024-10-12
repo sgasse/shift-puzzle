@@ -1,5 +1,8 @@
 //! Utility functions for interacting with the board.
 //!
+
+use web_sys::window;
+
 use crate::Error;
 
 /// Coordinates consisting of row and column.
@@ -117,4 +120,10 @@ pub fn get_swappable_neighbours(
             }
         })
         .collect())
+}
+
+pub fn search_params() -> Option<String> {
+    window()
+        .and_then(|w| w.location().search().ok())
+        .map(|s| s.trim_start_matches('?').to_owned())
 }
