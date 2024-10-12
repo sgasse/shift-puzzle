@@ -1,8 +1,7 @@
 # Slide Puzzle
 
 Implementation of a slide-puzzle game with random puzzles and two solver
-algorithms. Powered by the frontend framework [`yew`][yew] (compiled to
-[`Wasm`][wasm]) and written in Rust.
+algorithms. Written in Rust for Wasm.
 
 ![Example](./assets/slide_puzzle.gif)
 
@@ -19,11 +18,6 @@ shows the picture. Thus if we want to generate a solvable puzzle, the best way
 to do this is by randomly doing valid swaps.
 
 ## Modeling
-
-In code, we represent the puzzle state as an array of fields. To allow for
-different sizes of puzzles while always having the same value for the empty
-field, we use the maximum value of our data type, so for `u8`, this is
-`u8::MAX`.
 
 To know which fields can be swapped with which other fields, we need to tranform
 the indices of the fields to the coordinates in the square puzzle grid and vice
@@ -53,7 +47,7 @@ through the graph of states which builds the graph on the go.
 
 We can see that holding all the states in memory will be the main limiting
 factor for our algorithm. To cut down memory requirements as much as possible,
-we use `u8` values. With the empty field value as `u8::MAX` (255), we are
+we use `u8` values. With `u8::MAX` (255), we are
 limited to puzzles of size `floor(sqrt(255)) == 15` which is enough for our
 purposes. It is indispensible to recognize states which we have already seen
 before. To do this, we build a set of state hashes.
@@ -142,5 +136,4 @@ is quite complicated and tedious:
   of the empty field (excluding fixed fields and the field to move itself).
 
 [d_and_c_algorithm_explained]: https://www.kopf.com.br/kaplof/how-to-solve-any-slide-puzzle-regardless-of-its-size/
-[yew]: https://yew.rs/
 [wasm]: https://webassembly.org/

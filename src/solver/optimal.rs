@@ -1,8 +1,9 @@
-//! Naive, optimal puzzle solver.
+//! Naive, optimal puzzle solver
 //!
 //! This runs a breath-first-search in the state space of possible slides until
 //! finding the final state. The state space is built on the fly.
 //!
+
 use std::{
     collections::VecDeque,
     hash::{Hash, Hasher},
@@ -56,7 +57,8 @@ pub fn find_swap_order(
         return Ok(Vec::with_capacity(0));
     }
 
-    let empty_field_idx = get_idx_of_val(&fields, u8::MAX)?;
+    let empty_field_id = (width * height - 1) as u8;
+    let empty_field_idx = get_idx_of_val(&fields, empty_field_id)?;
 
     // Map from a state hash to its parent hash and the last swap that led to
     // this state from the parent. We need to the swap information to trace back
@@ -149,7 +151,7 @@ mod test {
 
     #[test]
     fn test_find_swap_order_zero_moves() -> Result<(), Error> {
-        let fields = vec![0, 1, 2, u8::MAX];
+        let fields = vec![0, 1, 2, 3];
         let swap_order = find_swap_order(&fields, 2, 2)?;
         assert_eq!(swap_order, Vec::with_capacity(0));
         Ok(())
@@ -157,7 +159,7 @@ mod test {
 
     #[test]
     fn test_find_swap_order_one_move() -> Result<(), Error> {
-        let fields = vec![0, 1, u8::MAX, 2];
+        let fields = vec![0, 1, 3, 2];
         let swap_order = find_swap_order(&fields, 2, 2)?;
         assert_eq!(swap_order, vec![(2, 3)]);
         Ok(())
@@ -165,7 +167,7 @@ mod test {
 
     #[test]
     fn test_find_swap_order_four_swaps() -> Result<(), Error> {
-        let fields = vec![u8::MAX, 1, 2, 0, 3, 5, 6, 4, 7];
+        let fields = vec![8, 1, 2, 0, 3, 5, 6, 4, 7];
         let swap_order = find_swap_order(&fields, 3, 3)?;
         assert_eq!(swap_order, vec![(0, 3), (3, 4), (4, 7), (7, 8)]);
         Ok(())

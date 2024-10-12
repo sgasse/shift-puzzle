@@ -3,6 +3,7 @@
 //! See also:
 //! https://www.kopf.com.br/kaplof/how-to-solve-any-slide-puzzle-regardless-of-its-size/
 //!
+
 use std::collections::{HashMap, HashSet, VecDeque};
 
 use simple_error::bail;
@@ -46,7 +47,8 @@ impl DacPuzzleSolver {
             bail!("DacPuzzleSolver: Puzzles below 3x3 are not supported");
         }
 
-        let empty_field_idx = get_idx_of_val(fields, u8::MAX)? as i32;
+        let empty_field_val = (width * height - 1) as u8;
+        let empty_field_idx = get_idx_of_val(fields, empty_field_val)? as i32;
         let empty_field_pos = get_coords_from_idx(empty_field_idx, width);
 
         Ok(Self {
@@ -255,7 +257,8 @@ impl DacPuzzleSolver {
         // In this case, our routine would fail to find a path because it cannot
         // move the targeted field (2) or any of the already sorted fields (0
         // and 1). Thus, we have to check for and handle this case explicitly.
-        if self.value_at_pos(field_goal_pos)? == u8::MAX
+        let empty_field_val = (self.width * self.height - 1) as u8;
+        if self.value_at_pos(field_goal_pos)? == empty_field_val
             && self.value_at_pos(empty_field_target_pos)? == field_value
         {
             // Just swap the field into position and return
@@ -642,7 +645,7 @@ mod test {
 
     #[test]
     fn test_solving_regular_4_by_4() -> Result<(), Error> {
-        let mut fields = vec![8, 5, 6, 1, 14, 4, 7, 2, 0, 13, 11, 9, 255, 12, 10, 3];
+        let mut fields = vec![8, 5, 6, 1, 14, 4, 7, 2, 0, 13, 11, 9, 15, 12, 10, 3];
         let target_fields = initialize_fields(fields.len());
 
         let mut solver = DacPuzzleSolver::new(&fields, 4, 4)?;
@@ -659,7 +662,7 @@ mod test {
 
     #[test]
     fn test_corner_case_corner_presolved_row_end() -> Result<(), Error> {
-        let mut fields = vec![2, 1, 5, 3, 0, 7, 255, 6, 4];
+        let mut fields = vec![2, 1, 5, 3, 0, 7, 8, 6, 4];
         let target_fields = initialize_fields(fields.len());
 
         let mut solver = DacPuzzleSolver::new(&fields, 3, 3)?;
@@ -676,7 +679,7 @@ mod test {
 
     #[test]
     fn test_corner_case() -> Result<(), Error> {
-        let mut fields = vec![2, 1, 5, 7, 3, 4, 0, 6, 255];
+        let mut fields = vec![2, 1, 5, 7, 3, 4, 0, 6, 8];
         let target_fields = initialize_fields(fields.len());
 
         let mut solver = DacPuzzleSolver::new(&fields, 3, 3)?;
