@@ -1,8 +1,42 @@
-<!DOCTYPE html><html lang="en"><head>
-    <link rel="stylesheet" href="/slide-puzzle/app-e7eee7ccd335af5d.css">
-  
-<link rel="preload" href="/slide-puzzle/slide-puzzle-460911f4e5e06097_bg.wasm" as="fetch" type="application/wasm" crossorigin="">
-<link rel="modulepreload" href="/slide-puzzle/slide-puzzle-460911f4e5e06097.js"></head>
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type" />
+    <link rel="stylesheet" href="./style.css" />
+  </head>
   <body>
+    <div class="content">
+      <div class="header">Slide Puzzle</div>
+      <div
+        id="board"
+        class="board"
+        style="
+          width: 12rem;
+          height: 12rem;
+          position: relative;
+          touch-action: none;
+        "
+        ontouchstart="on_touch_start"
+        ontouchend="on_touch_end"
+      ></div>
 
-<script type="module">import init from '/slide-puzzle/slide-puzzle-460911f4e5e06097.js';init('/slide-puzzle/slide-puzzle-460911f4e5e06097_bg.wasm');</script></body></html>
+      <button id="quick_swap">Shuffle Quick</button>
+      <button id="granular_swap">Shuffle Granular</button>
+      <button id="optimal_solve">Solve optimally</button>
+      <button id="d_and_c_solve">Solve D and C</button>
+    </div>
+  </body>
+
+  <script src="./pkg/slide_puzzle.js"></script>
+  <script>
+    const { wasm_main } = wasm_bindgen;
+
+    async function run() {
+      await wasm_bindgen("./pkg/slide_puzzle_bg.wasm");
+
+      wasm_main();
+    }
+
+    run();
+  </script>
+</html>
