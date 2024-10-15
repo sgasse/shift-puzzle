@@ -1,13 +1,15 @@
 use wasm_bindgen::prelude::*;
-use web_sys::{window, HtmlElement, MouseEvent, TouchEvent};
+use web_sys::{window, HtmlElement, MouseEvent};
 
 use crate::{
     lock_ui,
     solver::{divide_and_conquer::DacPuzzleSolver, optimal::find_swap_order},
-    ui_locked, unlock_ui,
-    utils::{get_shuffle_sequence, get_touch_direction, handle_touch_move},
-    BOARD, TOUCH_COORDS,
+    unlock_ui,
+    utils::get_shuffle_sequence,
+    BOARD,
 };
+
+use super::touch::{get_touch_end_callback, get_touch_move_callback, get_touch_start_callback};
 
 const NUM_SHUFFLES: usize = 10;
 const SWAP_TIMEOUT_FAST: i32 = 250;
@@ -40,6 +42,7 @@ pub(crate) fn setup_button_callbacks(size: usize) {
         .unwrap()
         .dyn_into::<HtmlElement>()
         .unwrap();
+
     let touch_start_callback = get_touch_start_callback();
     let touch_move_callback = get_touch_move_callback();
     let touch_end_callback = get_touch_end_callback(size);
@@ -222,58 +225,4 @@ fn apply_solve_sequence(solve_sequence: Vec<(usize, usize)>, interval: i32) {
         )
         .unwrap();
     finish_callback.forget();
-}
-
-fn get_touch_start_callback() -> Closure<dyn FnMut(TouchEvent)> {
-    Closure::wrap(Box::new(move |event: TouchEvent| {
-        if ui_locked() {
-            log::debug!("UI locked");
-        } else {
-            TOUCH_COORDS.with_borrow_mut(|t| {
-                if let Some(t) = t.start {
-                    log::warn!("Overwriting existing touch start coords: {:?}", t);
-                }
-
-                let first_touch = event.target_touches().get(0).unwrap();
-                let coords = (first_touch.screen_x(), first_touch.screen_y());
-                t.start = Some(coords);
-            })
-        }
-    }))
-}
-
-fn get_touch_move_callback() -> Closure<dyn FnMut(TouchEvent)> {
-    Closure::wrap(Box::new(move |event: TouchEvent| {
-        if ui_locked() {
-            log::debug!("UI locked");
-        } else {
-            TOUCH_COORDS.with_borrow_mut(|t| {
-                let first_touch = event.target_touches().get(0).unwrap();
-                let coords = (first_touch.screen_x(), first_touch.screen_y());
-                t.end = Some(coords);
-            })
-        }
-    }))
-}
-
-fn get_touch_end_callback(size: usize) -> Closure<dyn FnMut(TouchEvent)> {
-    Closure::wrap(Box::new(move |_| {
-        if ui_locked() {
-            log::debug!("UI locked");
-        } else {
-            TOUCH_COORDS.with_borrow_mut(|t| {
-                if let (Some((x_start, y_start)), Some((x_end, y_end))) = (t.start, t.end) {
-                    if let Some(direction) = get_touch_direction(x_start, y_start, x_end, y_end) {
-                        log::debug!("Handling touch direction {direction:?}");
-                        handle_touch_move(size, direction).unwrap();
-                    }
-
-                    t.start = None;
-                    t.end = None;
-                } else {
-                    log::warn!("Incomplete touch coordinates on touch end");
-                }
-            })
-        }
-    }))
 }

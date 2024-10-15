@@ -2,8 +2,9 @@ use wasm_bindgen::{prelude::Closure, JsCast as _};
 use web_sys::{window, CssStyleDeclaration, Document, MouseEvent, Node};
 
 use crate::{
+    ui::search_params::Parameters,
     ui_locked,
-    utils::{get_left_top, get_row_col_from_idx, Parameters},
+    utils::{get_left_top, get_row_col_from_idx},
     BOARD,
 };
 

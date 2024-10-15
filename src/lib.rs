@@ -4,13 +4,15 @@
 use std::cell::RefCell;
 
 use board::Board;
-use buttons::setup_button_callbacks;
-use utils::{extract_parameters, set_panic_hook, TouchCoords};
+use ui::{
+    buttons::setup_button_callbacks, search_params::extract_parameters, set_panic_hook,
+    touch::TouchCoords,
+};
 use wasm_bindgen::prelude::*;
 
 pub mod board;
-pub mod buttons;
 pub mod solver;
+pub mod ui;
 pub mod utils;
 
 pub type Error = Box<dyn std::error::Error>;
