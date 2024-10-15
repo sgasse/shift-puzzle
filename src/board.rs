@@ -17,7 +17,7 @@ pub fn create_div(id: u8, board_size: usize, field_size: usize, background_url: 
         .dyn_into::<web_sys::HtmlDivElement>()
         .unwrap();
 
-    // Set class for propper general style.
+    // Set class for proper general style.
     div.set_class_name("field");
     // Set field ID.
     div.set_id(&format!("{id}"));

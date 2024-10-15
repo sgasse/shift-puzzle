@@ -1,7 +1,7 @@
 # Slide Puzzle
 
 Implementation of a slide-puzzle game with random puzzles and two solver
-algorithms. Written in Rust for Wasm.
+algorithms. Written in Rust for [Wasm][wasm].
 
 ![Example](./assets/slide_puzzle.gif)
 
@@ -19,7 +19,7 @@ to do this is by randomly doing valid swaps.
 
 ## Modeling
 
-To know which fields can be swapped with which other fields, we need to tranform
+To know which fields can be swapped with which other fields, we need to transform
 the indices of the fields to the coordinates in the square puzzle grid and vice
 versa to perform swaps.
 
@@ -49,7 +49,7 @@ We can see that holding all the states in memory will be the main limiting
 factor for our algorithm. To cut down memory requirements as much as possible,
 we use `u8` values. With `u8::MAX` (255), we are
 limited to puzzles of size `floor(sqrt(255)) == 15` which is enough for our
-purposes. It is indispensible to recognize states which we have already seen
+purposes. It is indispensable to recognize states which we have already seen
 before. To do this, we build a set of state hashes.
 
 #### Complexity

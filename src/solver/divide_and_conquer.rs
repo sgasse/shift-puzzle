@@ -268,7 +268,7 @@ impl DacPuzzleSolver {
 
         // Move the last field in the row to the right column but two rows
         // further down
-        // Example goal state (empty field may be somwhere else):
+        // Example goal state (empty field may be somewhere else):
         // 0 1 X
         // X X X
         // X   2
