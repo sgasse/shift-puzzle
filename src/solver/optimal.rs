@@ -13,7 +13,7 @@ use fnv::FnvHasher;
 use rustc_hash::FxHashMap;
 
 use crate::{
-    board::{get_idx_of_val, get_swappable_neighbours, initialize_fields},
+    board::{get_empty_field_idx, get_swappable_neighbours, initialize_fields},
     Error,
 };
 
@@ -40,8 +40,7 @@ pub fn find_swap_order(
         return Ok(Vec::with_capacity(0));
     }
 
-    let empty_field_id = (width * height - 1) as u8;
-    let empty_field_idx = get_idx_of_val(&fields, empty_field_id)?;
+    let empty_field_idx = get_empty_field_idx(&fields)?;
 
     // Map from a state hash to its parent hash and the last swap that led to
     // this state from the parent. We need to the swap information to trace back

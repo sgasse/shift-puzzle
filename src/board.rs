@@ -113,7 +113,7 @@ where
 
 /// Get the index of a value in a slice.
 ///
-/// This is a convenience wrapper and panics if the value cannot be found.
+/// This is a convenience wrapper which should not be used in a hot path.
 pub(crate) fn get_idx_of_val(slice: &[u8], value: u8) -> Result<usize, Error> {
     slice
         .iter()
@@ -125,6 +125,10 @@ pub(crate) fn get_idx_of_val(slice: &[u8], value: u8) -> Result<usize, Error> {
 pub(crate) fn initialize_fields(num_elements: usize) -> Vec<u8> {
     let num_elements = usize::min(num_elements, u8::MAX as usize) as u8;
     (0..num_elements).collect()
+}
+
+pub(crate) fn get_empty_field_idx(fields: &[u8]) -> Result<usize, Error> {
+    get_idx_of_val(fields, fields.len() as u8 - 1)
 }
 
 /// Get the indices of neighbours that can be swapped with the empty field.

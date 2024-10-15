@@ -45,3 +45,4 @@ pub(crate) fn ui_locked() -> bool {
 }
 
 // TODO: Change button colors when locking UI.
+// TODO: Solver not attempting / button greyed out at a certain size

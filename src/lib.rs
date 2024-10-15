@@ -39,5 +39,3 @@ pub fn wasm_main() {
 
     unlock_ui();
 }
-
-// TODO: Solver not attempting / button greyed out at a certain size

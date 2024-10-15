@@ -2,7 +2,9 @@ use wasm_bindgen::{prelude::Closure, JsCast as _};
 use web_sys::{window, CssStyleDeclaration, Document, MouseEvent, Node};
 
 use crate::{
-    board::get_row_col_from_idx, board::Board, ui::search_params::Parameters, ui::ui_locked, BOARD,
+    board::{get_row_col_from_idx, Board},
+    ui::{search_params::Parameters, ui_locked},
+    BOARD,
 };
 
 pub(crate) struct UiBoard {

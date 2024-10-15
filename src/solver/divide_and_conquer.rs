@@ -10,8 +10,8 @@ use simple_error::bail;
 
 use crate::{
     board::{
-        get_coords_from_idx, get_idx_from_coords, get_idx_of_val, in_bounds, initialize_fields,
-        Coords,
+        get_coords_from_idx, get_empty_field_idx, get_idx_from_coords, get_idx_of_val, in_bounds,
+        initialize_fields, Coords,
     },
     Error,
 };
@@ -47,8 +47,7 @@ impl DacPuzzleSolver {
             bail!("DacPuzzleSolver: Puzzles below 3x3 are not supported");
         }
 
-        let empty_field_val = (width * height - 1) as u8;
-        let empty_field_idx = get_idx_of_val(fields, empty_field_val)? as i32;
+        let empty_field_idx = get_empty_field_idx(fields)? as i32;
         let empty_field_pos = get_coords_from_idx(empty_field_idx, width);
 
         Ok(Self {

@@ -2,7 +2,7 @@ use wasm_bindgen::prelude::*;
 use web_sys::{window, HtmlElement, MouseEvent};
 
 use crate::{
-    board::get_shuffle_sequence,
+    board::{get_empty_field_idx, get_shuffle_sequence},
     solver::{divide_and_conquer::DacPuzzleSolver, optimal::find_swap_order},
     ui::{
         lock_ui,
@@ -60,7 +60,8 @@ fn get_quick_swap_callback(size: usize) -> Closure<dyn FnMut(MouseEvent)> {
             return;
         }
 
-        let empty_field_idx = size - 1;
+        let empty_field_idx =
+            BOARD.with_borrow(|b| get_empty_field_idx(b.board().indices2ids()).unwrap());
 
         match get_shuffle_sequence(size, empty_field_idx, 20) {
             Ok(shuffle_sequence) => {
@@ -88,7 +89,8 @@ fn get_granular_swap_callback(size: usize) -> Closure<dyn FnMut(MouseEvent)> {
         }
 
         let num_shuffles = NUM_SHUFFLES;
-        let empty_field_idx = size - 1;
+        let empty_field_idx =
+            BOARD.with_borrow(|b| get_empty_field_idx(b.board().indices2ids()).unwrap());
 
         match get_shuffle_sequence(size, empty_field_idx, num_shuffles) {
             Ok(shuffle_sequence) => {
