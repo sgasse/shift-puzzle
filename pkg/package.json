@@ -1,6 +1,6 @@
 {
   "name": "slide-puzzle",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "files": [
     "slide_puzzle_bg.wasm",
     "slide_puzzle.js",
