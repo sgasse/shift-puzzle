@@ -2,8 +2,8 @@ use wasm_bindgen::prelude::*;
 use web_sys::TouchEvent;
 
 use crate::{
-    ui_locked,
-    utils::{get_idx_from_row_col, get_row_col_from_idx, in_bounds},
+    board::{get_idx_from_row_col, get_row_col_from_idx, in_bounds},
+    ui::ui_locked,
     Error, BOARD, TOUCH_COORDS,
 };
 
@@ -120,7 +120,7 @@ fn get_touch_direction(
 
 fn handle_touch_move(size: usize, direction: TouchMoveDirection) -> Result<bool, Error> {
     let empty_field_id = size * size - 1;
-    let empty_field_idx = BOARD.with_borrow(|b| b.ids2indices()[empty_field_id]);
+    let empty_field_idx = BOARD.with_borrow(|b| b.board().ids2indices()[empty_field_id]);
     let (empty_row, empty_col): (usize, usize) = get_row_col_from_idx(empty_field_idx, size);
     let (empty_row, empty_col) = (empty_row as i32, empty_col as i32);
 

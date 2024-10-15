@@ -3,23 +3,21 @@
 
 use std::cell::RefCell;
 
-use board::Board;
 use ui::{
-    buttons::setup_button_callbacks, search_params::extract_parameters, set_panic_hook,
-    touch::TouchCoords,
+    board::UiBoard, buttons::setup_button_callbacks, search_params::extract_parameters,
+    set_panic_hook, touch::TouchCoords, unlock_ui,
 };
 use wasm_bindgen::prelude::*;
 
 pub mod board;
 pub mod solver;
 pub mod ui;
-pub mod utils;
 
 pub type Error = Box<dyn std::error::Error>;
 
 thread_local! {
     static UI_LOCKED: RefCell<bool> = const { RefCell::new(true) };
-    static BOARD: RefCell<Board> = const { RefCell::new(Board::new()) };
+    static BOARD: RefCell<UiBoard> = const { RefCell::new(UiBoard::new()) };
     static TOUCH_COORDS: RefCell<TouchCoords> = const { RefCell::new(TouchCoords::new()) };
 }
 
@@ -40,34 +38,6 @@ pub fn wasm_main() {
     });
 
     unlock_ui();
-}
-
-fn lock_ui() -> bool {
-    UI_LOCKED.with_borrow_mut(|locked| {
-        if *locked {
-            log::debug!("UI is locked");
-            false
-        } else {
-            *locked = true;
-            log::debug!("Locked UI");
-            true
-        }
-    })
-}
-
-fn unlock_ui() {
-    UI_LOCKED.with_borrow_mut(|locked| {
-        if !*locked {
-            log::warn!("Should unlock UI which was not locked");
-        } else {
-            *locked = false;
-            log::debug!("Unlocked UI");
-        }
-    })
-}
-
-fn ui_locked() -> bool {
-    UI_LOCKED.with(|locked| *locked.borrow())
 }
 
 // TODO: Solver not attempting / button greyed out at a certain size

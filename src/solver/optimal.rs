@@ -13,26 +13,9 @@ use fnv::FnvHasher;
 use rustc_hash::FxHashMap;
 
 use crate::{
-    utils::{get_idx_of_val, get_swappable_neighbours, initialize_fields},
+    board::{get_idx_of_val, get_swappable_neighbours, initialize_fields},
     Error,
 };
-
-pub trait Hashed<T> {
-    fn hashed(&self) -> u64;
-}
-
-impl<T> Hashed<T> for Vec<T>
-where
-    T: std::hash::Hash,
-{
-    fn hashed(&self) -> u64 {
-        // FnvHasher has a lower collision probability than FxHasher and we are
-        // hashing up to millions of states
-        let mut s = FnvHasher::with_key(1234);
-        self.hash(&mut s);
-        s.finish()
-    }
-}
 
 /// Find the swap order to solve a puzzle
 ///
@@ -141,6 +124,23 @@ pub fn find_swap_order(
 
             Ok(swaps.into_iter().rev().collect())
         }
+    }
+}
+
+trait Hashed<T> {
+    fn hashed(&self) -> u64;
+}
+
+impl<T> Hashed<T> for Vec<T>
+where
+    T: std::hash::Hash,
+{
+    fn hashed(&self) -> u64 {
+        // FnvHasher has a lower collision probability than FxHasher and we are
+        // hashing up to millions of states
+        let mut s = FnvHasher::with_key(1234);
+        self.hash(&mut s);
+        s.finish()
     }
 }
 

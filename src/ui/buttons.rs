@@ -2,14 +2,14 @@ use wasm_bindgen::prelude::*;
 use web_sys::{window, HtmlElement, MouseEvent};
 
 use crate::{
-    lock_ui,
+    board::get_shuffle_sequence,
     solver::{divide_and_conquer::DacPuzzleSolver, optimal::find_swap_order},
-    unlock_ui,
-    utils::get_shuffle_sequence,
-    BOARD,
+    ui::{
+        lock_ui,
+        touch::{get_touch_end_callback, get_touch_move_callback, get_touch_start_callback},
+    },
+    unlock_ui, BOARD,
 };
-
-use super::touch::{get_touch_end_callback, get_touch_move_callback, get_touch_start_callback};
 
 const NUM_SHUFFLES: usize = 10;
 const SWAP_TIMEOUT_FAST: i32 = 250;
@@ -143,7 +143,7 @@ fn get_optimal_solve_callback(size: usize) -> Closure<dyn FnMut(MouseEvent)> {
             return;
         }
 
-        let ids = BOARD.with_borrow(|b| b.indices2ids().clone());
+        let ids = BOARD.with_borrow(|b| b.board().indices2ids().clone());
         match find_swap_order(&ids, size, size) {
             Ok(solve_sequence) => {
                 apply_solve_sequence(solve_sequence, SWAP_TIMEOUT_SLOW);
@@ -162,7 +162,7 @@ fn get_dac_solve_callback(size: usize) -> Closure<dyn FnMut(MouseEvent)> {
             return;
         }
 
-        let ids = BOARD.with_borrow(|b| b.indices2ids().clone());
+        let ids = BOARD.with_borrow(|b| b.board().indices2ids().clone());
         match DacPuzzleSolver::new(&ids, size as i32, size as i32) {
             Ok(mut solver) => match solver.solve_puzzle() {
                 Ok(solve_sequence) => {
