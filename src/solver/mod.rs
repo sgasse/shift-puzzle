@@ -2,3 +2,4 @@
 
 pub mod divide_and_conquer;
 pub mod optimal;
+pub(crate) mod test;
