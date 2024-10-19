@@ -30,17 +30,17 @@ pub fn find_swap_order(
     height: usize,
 ) -> Result<Vec<(usize, usize)>, Error> {
     // Determine initial values
-    let fields = fields.to_owned();
-    let initial_hash = fields.hashed();
-    let target_fields = initialize_fields(fields.len());
-    let target_hash = target_fields.hashed();
+    let state = fields.to_owned();
+    let initial_hash = state.hashed();
+    let target_state = initialize_fields(state.len());
+    let target_hash = target_state.hashed();
 
     // Exit early if the puzzle is already solved
     if initial_hash == target_hash {
         return Ok(Vec::with_capacity(0));
     }
 
-    let empty_field_idx = get_empty_field_idx(&fields)?;
+    let empty_field_idx = get_empty_field_idx(&state)?;
 
     // Map from a state hash to its parent hash and the last swap that led to
     // this state from the parent. We need the swap information to trace back
@@ -48,54 +48,67 @@ pub fn find_swap_order(
     let mut parent_map = FxHashMap::default();
 
     // Hold tuples of (state, state_hash, parent_hash, last_swap)
-    let mut states_to_explore = VecDeque::from([(
-        fields,
-        initial_hash,
-        // The parent hash of the first state is never used/considered
-        0,
-        (empty_field_idx, empty_field_idx),
-    )]);
+    let mut states_to_explore = VecDeque::from([Step {
+        state,
+        state_hash: initial_hash,
+        // For the first state, the parent hash is never used and can be set to zero.
+        parent_hash: 0,
+        // The empty field index is extracted from the last swap so we need to initialize it properly.
+        swap: Swap {
+            regular_idx: 0,
+            empty_idx: empty_field_idx,
+        },
+    }]);
 
     let mut num_iterations = 0;
 
     // Get state information for unseen state
-    while let Some((cur_fields, cur_hash, parent_hash, last_swap)) = states_to_explore.pop_front() {
+    while let Some(step) = states_to_explore.pop_front() {
         num_iterations += 1;
+        let Step {
+            state,
+            state_hash,
+            parent_hash,
+            swap,
+        } = step;
 
         // Add state hash with parent and last swap to map
-        parent_map.insert(cur_hash, (parent_hash, last_swap));
+        parent_map.insert(state_hash, (parent_hash, swap.clone()));
 
         // If the state is the target state, break
-        if cur_hash == target_hash {
+        if state_hash == target_hash {
             break;
         }
 
-        // The empty field is at the second position of the last swap
-        let empty_field_idx = last_swap.1;
-
         // Determine all reachable next states
-        let swappable_neighbours = get_swappable_neighbours(width, height, last_swap.1)?;
-        let reachable_tuples: Vec<_> = swappable_neighbours
-            .into_iter()
-            .map(|neighbour_idx| {
-                let mut next_fields = cur_fields.clone();
-                let next_swap = (empty_field_idx, neighbour_idx);
-                next_fields.swap(next_swap.0, next_swap.1);
-                let next_fields_hash = next_fields.hashed();
+        let swappable_neighbours = get_swappable_neighbours(width, height, swap.empty_idx);
+        let unseen_neighbours = swappable_neighbours.filter_map(|neighbour_idx| {
+            let mut next_fields = state.clone();
 
-                // (fields, fields_hash, parent_hash, last_swap)
-                (next_fields, next_fields_hash, cur_hash, next_swap)
-            })
-            .collect();
+            // Swap fields to calculate hash and check if we already know the state.
+            next_fields.swap(neighbour_idx, swap.empty_idx);
+            let next_fields_hash = next_fields.hashed();
 
-        // Filter out states which we have previously seen (via a shorter path)
-        let unseen_tuples: Vec<_> = reachable_tuples
-            .into_iter()
-            .filter(|elem_tuple| !parent_map.contains_key(&elem_tuple.1))
-            .collect();
+            if parent_map.contains_key(&next_fields_hash) {
+                None
+            } else {
+                // After swapping the fields, the indices are reversed.
+                let next_swap = Swap {
+                    regular_idx: swap.empty_idx,
+                    empty_idx: neighbour_idx,
+                };
+
+                Some(Step {
+                    state: next_fields,
+                    state_hash: next_fields_hash,
+                    parent_hash: state_hash,
+                    swap: next_swap,
+                })
+            }
+        });
 
         // Add information of unseen states to the queue to explore
-        states_to_explore.extend(unseen_tuples.into_iter());
+        states_to_explore.extend(unseen_neighbours);
     }
 
     log::debug!("Number of iterations in solver: {}", num_iterations);
@@ -111,7 +124,7 @@ pub fn find_swap_order(
 
             let mut next_hash = target_hash;
             while let Some((parent_hash, swap)) = parent_map.get(&next_hash) {
-                swaps.push(*swap);
+                swaps.push((swap.regular_idx, swap.empty_idx));
                 if *parent_hash == initial_hash {
                     break;
                 }
@@ -141,6 +154,19 @@ where
         self.hash(&mut s);
         s.finish()
     }
+}
+
+struct Step {
+    state: Vec<u8>,
+    state_hash: u64,
+    parent_hash: u64,
+    swap: Swap,
+}
+
+#[derive(Clone)]
+struct Swap {
+    regular_idx: usize,
+    empty_idx: usize,
 }
 
 #[cfg(test)]

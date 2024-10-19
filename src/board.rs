@@ -136,12 +136,12 @@ pub(crate) fn get_swappable_neighbours(
     width: usize,
     height: usize,
     empty_field_idx: usize,
-) -> Result<Vec<usize>, Error> {
+) -> impl Iterator<Item = usize> {
     let (row, col): (usize, usize) = get_row_col_from_idx(empty_field_idx, width);
 
-    Ok([(-1, 0), (1, 0), (0, -1), (0, 1)]
+    [(-1, 0), (1, 0), (0, -1), (0, 1)]
         .iter()
-        .filter_map(|(delta_row, delta_col)| {
+        .filter_map(move |(delta_row, delta_col)| {
             let neighbour_row = row as isize + delta_row;
             let neighbour_col = col as isize + delta_col;
             match in_bounds(
@@ -158,7 +158,6 @@ pub(crate) fn get_swappable_neighbours(
                 false => None,
             }
         })
-        .collect())
 }
 
 /// Get a sequence of valid semi-random shuffles.
@@ -178,8 +177,7 @@ pub(crate) fn get_shuffle_sequence(
     let mut prev_empty_field_idx = empty_field_idx;
 
     for _ in 0..num_swaps {
-        let swappable_neighbours: Vec<_> = get_swappable_neighbours(size, size, empty_field_idx)?
-            .into_iter()
+        let swappable_neighbours: Vec<_> = get_swappable_neighbours(size, size, empty_field_idx)
             .filter(|&element| element != prev_empty_field_idx)
             .collect();
         let chosen_neighbour = swappable_neighbours
