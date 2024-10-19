@@ -18,7 +18,7 @@ use crate::{
 
 pub struct DacPuzzleSolver {
     fields: Vec<u8>,
-    forbidden_fields: HashSet<Coords<i32>>,
+    fixed_fields: HashSet<Coords<i32>>,
     width: i32,
     height: i32,
     empty_field_pos: Coords<i32>,
@@ -52,7 +52,7 @@ impl DacPuzzleSolver {
 
         Ok(Self {
             fields: fields.to_owned(),
-            forbidden_fields: HashSet::new(),
+            fixed_fields: HashSet::new(),
             width,
             height,
             empty_field_pos,
@@ -99,7 +99,7 @@ impl DacPuzzleSolver {
                             let goal_value_pos = self.pos_of_value(cur_pos_goal_value)?;
                             self.swap_field_to_goal_pos(goal_value_pos, cur_pos, phase)?;
                         }
-                        self.forbidden_fields.insert(cur_pos);
+                        self.fixed_fields.insert(cur_pos);
                     }
                 }
 
@@ -118,7 +118,7 @@ impl DacPuzzleSolver {
                             let goal_value_pos = self.pos_of_value(cur_pos_goal_value)?;
                             self.swap_field_to_goal_pos(goal_value_pos, cur_pos, phase)?;
                         }
-                        self.forbidden_fields.insert(cur_pos);
+                        self.fixed_fields.insert(cur_pos);
                     }
                 }
             }
@@ -171,17 +171,17 @@ impl DacPuzzleSolver {
         // which we are moving. One iteration of the loop moves the empty field to
         // this target and then swaps the field with the empty field.
         loop {
+            // Check if the field we are moving reached the goal field and return
+            // if so.
+            if goal_value_pos == goal_pos {
+                return Ok(());
+            }
+
             // Identify next target field between field to move and goal field
             let delta_coords = Coords {
                 row: goal_pos.row - goal_value_pos.row,
                 col: goal_pos.col - goal_value_pos.col,
             };
-
-            // Check if the field we are moving reached the goal field and return
-            // if so.
-            if delta_coords == (Coords { row: 0, col: 0 }) {
-                return Ok(());
-            }
 
             // Identify target coordinates to move to
             let target_coords = identify_next_step_field(goal_value_pos, delta_coords, phase);
@@ -299,7 +299,7 @@ impl DacPuzzleSolver {
 
     /// Compute the path of shifting the empty field.
     ///
-    /// Fields that may not be moved/touched are specified in `forbidden_fields`.
+    /// Fields that may not be moved/touched are specified in `fixed_fields`.
     fn compute_empty_field_moves(
         &self,
         field: Coords<i32>,
@@ -314,7 +314,7 @@ impl DacPuzzleSolver {
         let mut seen_neighbours: HashSet<Coords<i32>> = HashSet::new();
         let mut to_discover = VecDeque::from([empty_field]);
 
-        // Run BFS (excluding forbidden fields) from empty field until we find
+        // Run BFS (excluding fixed fields) from empty field until we find
         // the target field.
         'expansion: while let Some(cur_field) = to_discover.pop_front() {
             // Mark neighbour as seen/processed for BFS. We do this before
@@ -323,7 +323,7 @@ impl DacPuzzleSolver {
             seen_neighbours.insert(cur_field);
 
             // Identify neighbours
-            let neighbours: Vec<Coords<i32>> = {
+            let neighbours =
                 [(-1, 0), (1, 0), (0, 1), (0, -1)]
                     .iter()
                     .filter_map(|(d_row, d_col)| {
@@ -332,18 +332,16 @@ impl DacPuzzleSolver {
                             col: cur_field.col + d_col,
                         };
                         // Filter out fields which are outside of the board, already
-                        // processed or in the forbidden set.
+                        // processed or in the fixed set.
                         match in_bounds(neighbour.row, neighbour.col, self.width, self.height)
                             && !seen_neighbours.contains(&neighbour)
-                            && !self.forbidden_fields.contains(&neighbour)
+                            && !self.fixed_fields.contains(&neighbour)
                             && neighbour != field
                         {
                             true => Some(neighbour),
                             false => None,
                         }
-                    })
-                    .collect()
-            };
+                    });
 
             // Add the current field as parent for all neighbours and queue them
             // to be processed.
@@ -361,13 +359,13 @@ impl DacPuzzleSolver {
         // Trace back path from the target field to the beginning
         let mut cur_field = target_field;
         let mut parents = vec![cur_field];
-        while cur_field != empty_field {
-            cur_field = *parent_field.get(&cur_field).expect("Should have parent");
+        loop {
+            if cur_field == empty_field {
+                break;
+            }
+            cur_field = *parent_field.get(&cur_field).expect("failed to find parent");
             parents.push(cur_field);
         }
-
-        // Remove the empty field itself as move
-        parents.pop();
 
         // Reverse to start from the beginning and return
         parents.reverse();

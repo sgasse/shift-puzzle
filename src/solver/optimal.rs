@@ -43,11 +43,11 @@ pub fn find_swap_order(
     let empty_field_idx = get_empty_field_idx(&fields)?;
 
     // Map from a state hash to its parent hash and the last swap that led to
-    // this state from the parent. We need to the swap information to trace back
+    // this state from the parent. We need the swap information to trace back
     // a path from the start to the target later.
     let mut parent_map = FxHashMap::default();
 
-    // Hold tuples of (state, state_hash parent_hash, last_swap)
+    // Hold tuples of (state, state_hash, parent_hash, last_swap)
     let mut states_to_explore = VecDeque::from([(
         fields,
         initial_hash,

@@ -43,5 +43,5 @@ lazy_static = "1.5.0"
 default = ["console_error_panic_hook"]
 
 [[bench]]
-name = "optimal_solver_benchmark"
+name = "solver_benchmark"
 harness = false
