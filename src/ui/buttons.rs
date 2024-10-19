@@ -1,5 +1,5 @@
 use wasm_bindgen::prelude::*;
-use web_sys::{window, HtmlElement, MouseEvent};
+use web_sys::{window, CssStyleSheet, HtmlElement, MouseEvent};
 
 use crate::{
     board::{get_empty_field_idx, get_shuffle_sequence},
@@ -145,6 +145,7 @@ fn get_optimal_solve_callback(size: usize) -> Closure<dyn FnMut(MouseEvent)> {
             return;
         }
 
+        // TODO: Solver aborting after a certain size?
         let ids = BOARD.with_borrow(|b| b.board().indices2ids().clone());
         match find_swap_order(&ids, size, size) {
             Ok(solve_sequence) => {
@@ -227,4 +228,51 @@ fn apply_solve_sequence(solve_sequence: Vec<(usize, usize)>, interval: i32) {
         )
         .unwrap();
     finish_callback.forget();
+}
+
+const ACTIVE_BUTTON_COLOR: &str = "rgb(233, 233, 237)";
+const INACTIVE_BUTTON_COLOR: &str = "rgb(208, 208, 215)";
+
+pub(crate) fn deactivate_buttons() {
+    replace_in_button_style(&[
+        ("pointer", "wait"),
+        (ACTIVE_BUTTON_COLOR, INACTIVE_BUTTON_COLOR),
+    ]);
+}
+
+pub(crate) fn activate_buttons() {
+    replace_in_button_style(&[
+        ("wait", "pointer"),
+        (INACTIVE_BUTTON_COLOR, ACTIVE_BUTTON_COLOR),
+    ]);
+}
+
+fn replace_in_button_style(replaces: &[(&str, &str)]) {
+    let document = window().unwrap().document().unwrap();
+    let style_sheets = document.style_sheets();
+
+    // The global style sheet is the first one.
+    if let Some(global_sheet) = style_sheets.get(0) {
+        let global_css = global_sheet.dyn_into::<CssStyleSheet>().unwrap();
+        let rule_list = global_css.css_rules().unwrap();
+
+        // Iterate rules until we find the rule for the button class.
+        for i in 0..rule_list.length() {
+            match rule_list.get(i) {
+                Some(rule) if rule.css_text().contains("button {") => {
+                    let existing_rule = rule.css_text();
+                    let updated_rule = replaces
+                        .iter()
+                        .fold(existing_rule, |rule, (old, new)| rule.replace(old, new));
+                    log::debug!("Updating to {updated_rule}");
+                    // Replace existing with updated rule in two steps.
+                    // `replace` would be better but returns a `Promise` which we do not want to handle in this context.
+                    global_css.delete_rule(i).unwrap();
+                    global_css.insert_rule(&updated_rule).unwrap();
+                    return;
+                }
+                _ => (),
+            }
+        }
+    }
 }

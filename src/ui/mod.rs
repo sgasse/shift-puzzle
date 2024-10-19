@@ -1,3 +1,5 @@
+use buttons::{activate_buttons, deactivate_buttons};
+
 use crate::UI_LOCKED;
 
 pub(crate) mod board;
@@ -23,6 +25,7 @@ pub(crate) fn lock_ui() -> bool {
             false
         } else {
             *locked = true;
+            deactivate_buttons();
             log::debug!("Locked UI");
             true
         }
@@ -35,6 +38,7 @@ pub(crate) fn unlock_ui() {
             log::warn!("Should unlock UI which was not locked");
         } else {
             *locked = false;
+            activate_buttons();
             log::debug!("Unlocked UI");
         }
     })
@@ -43,6 +47,3 @@ pub(crate) fn unlock_ui() {
 pub(crate) fn ui_locked() -> bool {
     UI_LOCKED.with(|locked| *locked.borrow())
 }
-
-// TODO: Change button colors when locking UI.
-// TODO: Solver not attempting / button greyed out at a certain size

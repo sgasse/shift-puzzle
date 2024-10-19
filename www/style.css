@@ -11,10 +11,11 @@ button {
   border-radius: 20px;
   padding: 0.5rem;
   cursor: pointer;
+  background-color: rgb(233, 233, 237);
 }
 
-.clickable:hover {
-  cursor: pointer;
+button:hover {
+  background-color: rgb(208, 208, 215);
 }
 
 .content {
