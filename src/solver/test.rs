@@ -48,7 +48,7 @@ pub(crate) mod examples {
     fn generate_random_field() {
         use crate::board::{get_shuffle_sequence, initialize_fields};
 
-        let sequence = get_shuffle_sequence(4, 4 * 4 - 1, 3).unwrap();
+        let sequence = get_shuffle_sequence(4, 4 * 4 - 1, 3);
         let mut fields = initialize_fields(4 * 4);
 
         for swap in sequence {
@@ -146,7 +146,7 @@ mod optimal_tests {
             let solved = initialize_fields($size * $size);
             for fields in [$($examples,)+] {
                 let mut fields: Vec<_> = fields.into();
-                let swaps = find_swap_order(&fields, $size, $size).unwrap();
+                let swaps = find_swap_order(&fields, $size, $size, 10_000_000_000).unwrap();
 
                 for swap in swaps {
                     fields.swap(swap.0, swap.1);

@@ -10,6 +10,7 @@ use ui::{
 use wasm_bindgen::prelude::*;
 
 pub mod board;
+pub mod error;
 pub mod solver;
 pub mod ui;
 

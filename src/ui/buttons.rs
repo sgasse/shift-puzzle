@@ -14,6 +14,7 @@ use crate::{
 const NUM_SHUFFLES: usize = 10;
 const SWAP_TIMEOUT_FAST: i32 = 250;
 const SWAP_TIMEOUT_SLOW: i32 = 500;
+const MAX_NUM_STEPS: usize = 10_000_000;
 
 pub(crate) fn setup_button_callbacks(size: usize) {
     let document = window().unwrap().document().unwrap();
@@ -63,20 +64,14 @@ fn get_quick_swap_callback(size: usize) -> Closure<dyn FnMut(MouseEvent)> {
         let empty_field_idx =
             BOARD.with_borrow(|b| get_empty_field_idx(b.board().fields()).unwrap());
 
-        match get_shuffle_sequence(size, empty_field_idx, 20) {
-            Ok(shuffle_sequence) => {
-                log::info!("Shuffle sequence: {:?}", &shuffle_sequence);
+        let shuffle_sequence = get_shuffle_sequence(size, empty_field_idx, 20);
+        log::info!("Shuffle sequence: {:?}", &shuffle_sequence);
 
-                BOARD.with_borrow_mut(|b| {
-                    for swap in shuffle_sequence {
-                        b.swap_indices(swap.0, swap.1);
-                    }
-                });
+        BOARD.with_borrow_mut(|b| {
+            for swap in shuffle_sequence {
+                b.swap_indices(swap.0, swap.1);
             }
-            Err(err) => {
-                log::error!("failed in quick swapping: {err}");
-            }
-        }
+        });
 
         unlock_ui();
     }))
@@ -92,50 +87,43 @@ fn get_granular_swap_callback(size: usize) -> Closure<dyn FnMut(MouseEvent)> {
         let empty_field_idx =
             BOARD.with_borrow(|b| get_empty_field_idx(b.board().fields()).unwrap());
 
-        match get_shuffle_sequence(size, empty_field_idx, num_shuffles) {
-            Ok(shuffle_sequence) => {
-                log::info!("Shuffle sequence: {:?}", &shuffle_sequence);
+        let shuffle_sequence = get_shuffle_sequence(size, empty_field_idx, num_shuffles);
+        log::info!("Shuffle sequence: {:?}", &shuffle_sequence);
 
-                let window = window().unwrap();
-                let mut callbacks = Vec::with_capacity(num_shuffles);
+        let window = window().unwrap();
+        let mut callbacks = Vec::with_capacity(num_shuffles);
 
-                // Send every shuffle with a separate timeout.
-                for (i, swap) in shuffle_sequence.into_iter().enumerate() {
-                    let callback = get_swap_callback(swap);
-                    let millis = SWAP_TIMEOUT_FAST * (i as i32 + 1);
+        // Send every shuffle with a separate timeout.
+        for (i, swap) in shuffle_sequence.into_iter().enumerate() {
+            let callback = get_swap_callback(swap);
+            let millis = SWAP_TIMEOUT_FAST * (i as i32 + 1);
 
-                    window
-                        .set_timeout_with_callback_and_timeout_and_arguments_0(
-                            callback.as_ref().unchecked_ref(),
-                            millis,
-                        )
-                        .unwrap();
+            window
+                .set_timeout_with_callback_and_timeout_and_arguments_0(
+                    callback.as_ref().unchecked_ref(),
+                    millis,
+                )
+                .unwrap();
 
-                    // Keep callback handles to drop at the end.
-                    callbacks.push(callback);
-                }
-
-                let mut _callbacks = Some(callbacks);
-                let finish_callback: Closure<dyn FnMut()> = Closure::wrap(Box::new(move || {
-                    // Drop callbacks by overwriting with None.
-                    _callbacks = None;
-                    log::debug!("Finished granular swap sequence");
-                    unlock_ui();
-                }));
-
-                window
-                    .set_timeout_with_callback_and_timeout_and_arguments_0(
-                        finish_callback.as_ref().unchecked_ref(),
-                        (num_shuffles as i32 + 1) * SWAP_TIMEOUT_FAST,
-                    )
-                    .unwrap();
-                finish_callback.forget();
-            }
-            Err(err) => {
-                log::error!("failed in granular swapping: {err}");
-                unlock_ui();
-            }
+            // Keep callback handles to drop at the end.
+            callbacks.push(callback);
         }
+
+        let mut _callbacks = Some(callbacks);
+        let finish_callback: Closure<dyn FnMut()> = Closure::wrap(Box::new(move || {
+            // Drop callbacks by overwriting with None.
+            _callbacks = None;
+            log::debug!("Finished granular swap sequence");
+            unlock_ui();
+        }));
+
+        window
+            .set_timeout_with_callback_and_timeout_and_arguments_0(
+                finish_callback.as_ref().unchecked_ref(),
+                (num_shuffles as i32 + 1) * SWAP_TIMEOUT_FAST,
+            )
+            .unwrap();
+        finish_callback.forget();
     }))
 }
 
@@ -145,9 +133,8 @@ fn get_optimal_solve_callback(size: usize) -> Closure<dyn FnMut(MouseEvent)> {
             return;
         }
 
-        // TODO: Solver aborting after a certain size?
         let ids = BOARD.with_borrow(|b| b.board().fields().clone());
-        match find_swap_order(&ids, size, size) {
+        match find_swap_order(&ids, size, size, MAX_NUM_STEPS) {
             Ok(solve_sequence) => {
                 apply_solve_sequence(solve_sequence, SWAP_TIMEOUT_SLOW);
             }

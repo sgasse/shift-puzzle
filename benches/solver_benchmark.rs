@@ -16,6 +16,8 @@ lazy_static::lazy_static! {
     };
 }
 
+const MAX_NUM_STEPS_OPTIMAL: usize = 2_000_000;
+
 fn criterion_benchmark(c: &mut Criterion) {
     let mut group100 = c.benchmark_group("100 samples");
     group100.sample_size(100);
@@ -27,6 +29,7 @@ fn criterion_benchmark(c: &mut Criterion) {
                 black_box(&PUZZLE_3X3_16.0),
                 black_box(PUZZLE_3X3_16.1),
                 black_box(PUZZLE_3X3_16.2),
+                MAX_NUM_STEPS_OPTIMAL,
             )
         })
     });
@@ -38,6 +41,7 @@ fn criterion_benchmark(c: &mut Criterion) {
                 black_box(&PUZZLE_4X4_10.0),
                 black_box(PUZZLE_4X4_10.1),
                 black_box(PUZZLE_4X4_10.2),
+                MAX_NUM_STEPS_OPTIMAL,
             )
         })
     });
@@ -77,11 +81,12 @@ fn criterion_benchmark(c: &mut Criterion) {
                 black_box(&PUZZLE_4X4_17.0),
                 black_box(PUZZLE_4X4_17.1),
                 black_box(PUZZLE_4X4_17.2),
+                MAX_NUM_STEPS_OPTIMAL,
             )
         })
     });
 
-    group_slow.bench_function("4x4 10 steps divide and conquer", |b| {
+    group_slow.bench_function("4x4 17 steps divide and conquer", |b| {
         b.iter(|| {
             let mut solver = DacPuzzleSolver::new(
                 black_box(&PUZZLE_4X4_17.0),

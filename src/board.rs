@@ -1,7 +1,6 @@
 use rand::prelude::SliceRandom;
-use simple_error::simple_error;
 
-use crate::Error;
+use crate::error::LibError;
 
 #[derive(Debug)]
 pub(crate) struct Board {
@@ -111,23 +110,23 @@ where
     t_zero <= row && row < height && t_zero <= col && col < width
 }
 
-/// Get the index of a value in a slice.
-///
-/// This is a convenience wrapper which should not be used in a hot path.
-pub(crate) fn get_idx_of_val(slice: &[u8], value: u8) -> Result<usize, Error> {
-    slice
-        .iter()
-        .position(|&v| v == value)
-        .ok_or_else(|| simple_error!("value not found").into())
-}
-
 /// Initialize fields as vector.
 pub(crate) fn initialize_fields(num_elements: usize) -> Vec<u8> {
     let num_elements = usize::min(num_elements, u8::MAX as usize) as u8;
     (0..num_elements).collect()
 }
 
-pub(crate) fn get_empty_field_idx(fields: &[u8]) -> Result<usize, Error> {
+/// Get the index of a value in a slice.
+///
+/// This is a convenience wrapper which should not be used in a hot path.
+pub(crate) fn get_idx_of_val(slice: &[u8], value: u8) -> Result<usize, LibError> {
+    slice
+        .iter()
+        .position(|&v| v == value)
+        .ok_or(LibError::ValueNotFound(value))
+}
+
+pub(crate) fn get_empty_field_idx(fields: &[u8]) -> Result<usize, LibError> {
     get_idx_of_val(fields, fields.len() as u8 - 1)
 }
 
@@ -168,7 +167,7 @@ pub(crate) fn get_shuffle_sequence(
     size: usize,
     mut empty_field_idx: usize,
     num_swaps: usize,
-) -> Result<Vec<(usize, usize)>, Error> {
+) -> Vec<(usize, usize)> {
     let mut swaps = Vec::with_capacity(num_swaps);
 
     // We want to avoid swapping fields back and forth like (2, 1), (1, 2)
@@ -182,11 +181,11 @@ pub(crate) fn get_shuffle_sequence(
             .collect();
         let chosen_neighbour = swappable_neighbours
             .choose(&mut rand::thread_rng())
-            .ok_or_else(|| simple_error!("no random neighbour to choose"))?;
+            .expect("should always have a neighbour to swap");
         swaps.push((empty_field_idx, *chosen_neighbour));
         prev_empty_field_idx = empty_field_idx;
         empty_field_idx = *chosen_neighbour;
     }
 
-    Ok(swaps)
+    swaps
 }

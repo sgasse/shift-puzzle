@@ -14,7 +14,7 @@ use rustc_hash::FxHashMap;
 
 use crate::{
     board::{get_empty_field_idx, get_swappable_neighbours, initialize_fields},
-    Error,
+    error::LibError,
 };
 
 /// Find the swap order to solve a puzzle
@@ -28,19 +28,20 @@ pub fn find_swap_order(
     fields: &[u8],
     width: usize,
     height: usize,
-) -> Result<Vec<(usize, usize)>, Error> {
+    max_num_steps: usize,
+) -> Result<Vec<(usize, usize)>, LibError> {
     // Determine initial values
-    let state = fields.to_owned();
-    let initial_hash = state.hashed();
-    let target_state = initialize_fields(state.len());
-    let target_hash = target_state.hashed();
+    let fields = fields.to_owned();
+    let initial_hash = fields.hashed();
+    let target_fields = initialize_fields(fields.len());
+    let target_hash = target_fields.hashed();
 
     // Exit early if the puzzle is already solved
     if initial_hash == target_hash {
         return Ok(Vec::with_capacity(0));
     }
 
-    let empty_field_idx = get_empty_field_idx(&state)?;
+    let empty_field_idx = get_empty_field_idx(&fields)?;
 
     // Map from a state hash to its parent hash and the last swap that led to
     // this state from the parent. We need the swap information to trace back
@@ -49,12 +50,12 @@ pub fn find_swap_order(
 
     // Hold tuples of (state, state_hash, parent_hash, last_swap)
     let mut states_to_explore = VecDeque::from([Step {
-        state,
+        state: fields,
         state_hash: initial_hash,
         // For the first state, the parent hash is never used and can be set to zero.
         parent_hash: 0,
         // The empty field index is extracted from the last swap so we need to initialize it properly.
-        swap: Swap {
+        last_swap: Swap {
             regular_idx: 0,
             empty_idx: empty_field_idx,
         },
@@ -65,15 +66,19 @@ pub fn find_swap_order(
     // Get state information for unseen state
     while let Some(step) = states_to_explore.pop_front() {
         num_iterations += 1;
+        if num_iterations > max_num_steps {
+            return Err(LibError::MaxNumStepsReached(max_num_steps));
+        }
+
         let Step {
             state,
             state_hash,
             parent_hash,
-            swap,
+            last_swap,
         } = step;
 
         // Add state hash with parent and last swap to map
-        parent_map.insert(state_hash, (parent_hash, swap.clone()));
+        parent_map.insert(state_hash, (parent_hash, last_swap.clone()));
 
         // If the state is the target state, break
         if state_hash == target_hash {
@@ -81,12 +86,12 @@ pub fn find_swap_order(
         }
 
         // Determine all reachable next states
-        let swappable_neighbours = get_swappable_neighbours(width, height, swap.empty_idx);
+        let swappable_neighbours = get_swappable_neighbours(width, height, last_swap.empty_idx);
         let unseen_neighbours = swappable_neighbours.filter_map(|neighbour_idx| {
             let mut next_fields = state.clone();
 
             // Swap fields to calculate hash and check if we already know the state.
-            next_fields.swap(neighbour_idx, swap.empty_idx);
+            next_fields.swap(neighbour_idx, last_swap.empty_idx);
             let next_fields_hash = next_fields.hashed();
 
             if parent_map.contains_key(&next_fields_hash) {
@@ -94,7 +99,7 @@ pub fn find_swap_order(
             } else {
                 // After swapping the fields, the indices are reversed.
                 let next_swap = Swap {
-                    regular_idx: swap.empty_idx,
+                    regular_idx: last_swap.empty_idx,
                     empty_idx: neighbour_idx,
                 };
 
@@ -102,7 +107,7 @@ pub fn find_swap_order(
                     state: next_fields,
                     state_hash: next_fields_hash,
                     parent_hash: state_hash,
-                    swap: next_swap,
+                    last_swap: next_swap,
                 })
             }
         });
@@ -116,8 +121,7 @@ pub fn find_swap_order(
     // Extract the path of swaps from the initial position to the target if it
     // exists
     match parent_map.contains_key(&target_hash) {
-        // TODO: Error?
-        false => Ok(Vec::with_capacity(0)),
+        false => Err(LibError::TerminatedWithoutSolution),
         true => {
             // Trace back from target to beginning
             let mut swaps = Vec::new();
@@ -160,7 +164,7 @@ struct Step {
     state: Vec<u8>,
     state_hash: u64,
     parent_hash: u64,
-    swap: Swap,
+    last_swap: Swap,
 }
 
 #[derive(Clone)]
@@ -175,25 +179,25 @@ mod test {
     use super::*;
 
     #[test]
-    fn test_find_swap_order_zero_moves() -> Result<(), Error> {
+    fn test_find_swap_order_zero_moves() -> Result<(), LibError> {
         let fields = vec![0, 1, 2, 3];
-        let swap_order = find_swap_order(&fields, 2, 2)?;
+        let swap_order = find_swap_order(&fields, 2, 2, 10)?;
         assert_eq!(swap_order, Vec::with_capacity(0));
         Ok(())
     }
 
     #[test]
-    fn test_find_swap_order_one_move() -> Result<(), Error> {
+    fn test_find_swap_order_one_move() -> Result<(), LibError> {
         let fields = vec![0, 1, 3, 2];
-        let swap_order = find_swap_order(&fields, 2, 2)?;
+        let swap_order = find_swap_order(&fields, 2, 2, 10)?;
         assert_eq!(swap_order, vec![(2, 3)]);
         Ok(())
     }
 
     #[test]
-    fn test_find_swap_order_four_swaps() -> Result<(), Error> {
+    fn test_find_swap_order_four_swaps() -> Result<(), LibError> {
         let fields = vec![8, 1, 2, 0, 3, 5, 6, 4, 7];
-        let swap_order = find_swap_order(&fields, 3, 3)?;
+        let swap_order = find_swap_order(&fields, 3, 3, 256)?;
         assert_eq!(swap_order, vec![(0, 3), (3, 4), (4, 7), (7, 8)]);
         Ok(())
     }
