@@ -120,7 +120,7 @@ fn get_touch_direction(
 
 fn handle_touch_move(size: usize, direction: TouchMoveDirection) -> Result<bool, Error> {
     let empty_field_id = size * size - 1;
-    let empty_field_idx = BOARD.with_borrow(|b| b.board().ids2indices()[empty_field_id]);
+    let empty_field_idx = BOARD.with_borrow(|b| b.board().id2idx()[empty_field_id]);
     let (empty_row, empty_col): (usize, usize) = get_row_col_from_idx(empty_field_idx, size);
     let (empty_row, empty_col) = (empty_row as i32, empty_col as i32);
 

@@ -5,49 +5,49 @@ use crate::Error;
 
 #[derive(Debug)]
 pub(crate) struct Board {
-    /// Vector mapping indices to IDs.
-    /// e.g. ids[5] = 6 -> index 5 has tile 6 on the board
-    indices2ids: Vec<u8>,
+    /// Vector of field IDs in row-major order.
+    /// e.g. fields[5] = 6 -> index 5 has the field with ID 6 on the board
+    fields: Vec<u8>,
     /// Vector mapping IDs to indices.
-    /// e.g. indices[2] = 4 -> tile 2 is at index 4 on the board
-    ids2indices: Vec<usize>,
+    /// e.g. id2idx[2] = 4 -> field with ID 2 is at index 4 on the board
+    id2idx: Vec<usize>,
 }
 
 impl Board {
     pub(crate) const fn new() -> Self {
         Self {
-            indices2ids: Vec::new(),
-            ids2indices: Vec::new(),
+            fields: Vec::new(),
+            id2idx: Vec::new(),
         }
     }
 
     pub(crate) fn init(&mut self, size: usize) {
         let num_elements = size * size;
-        self.indices2ids = (0..(num_elements as u8)).collect();
-        self.ids2indices = (0..num_elements).collect();
+        self.fields = (0..(num_elements as u8)).collect();
+        self.id2idx = (0..num_elements).collect();
     }
 
-    pub(crate) fn indices2ids(&self) -> &Vec<u8> {
-        &self.indices2ids
+    pub(crate) fn fields(&self) -> &Vec<u8> {
+        &self.fields
     }
 
-    pub(crate) fn ids2indices(&self) -> &Vec<usize> {
-        &self.ids2indices
+    pub(crate) fn id2idx(&self) -> &Vec<usize> {
+        &self.id2idx
     }
 
     pub(crate) fn swap_ids(&mut self, id_a: u8, id_b: u8) {
-        debug_assert!((id_a as usize) < self.indices2ids.len());
-        debug_assert!((id_b as usize) < self.indices2ids.len());
+        debug_assert!((id_a as usize) < self.fields.len());
+        debug_assert!((id_b as usize) < self.fields.len());
 
         // Swap IDs / indices in maps.
         // Look up at which index which ID is.
         // Swap the IDs in both maps.
-        let idx_a = self.ids2indices[id_a as usize];
-        let idx_b = self.ids2indices[id_b as usize];
-        self.indices2ids.swap(idx_a, idx_b);
+        let idx_a = self.id2idx[id_a as usize];
+        let idx_b = self.id2idx[id_b as usize];
+        self.fields.swap(idx_a, idx_b);
 
-        self.ids2indices[id_a as usize] = idx_b;
-        self.ids2indices[id_b as usize] = idx_a;
+        self.id2idx[id_a as usize] = idx_b;
+        self.id2idx[id_b as usize] = idx_a;
     }
 }
 

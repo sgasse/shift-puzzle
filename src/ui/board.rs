@@ -41,8 +41,8 @@ impl UiBoard {
     }
 
     pub(crate) fn swap_indices(&mut self, idx_a: usize, idx_b: usize) {
-        let id_a = self.inner.indices2ids()[idx_a];
-        let id_b = self.inner.indices2ids()[idx_b];
+        let id_a = self.inner.fields()[idx_a];
+        let id_b = self.inner.fields()[idx_b];
 
         self.swap_ui_fields(id_a, id_b);
         self.inner.swap_ids(id_a, id_b);
@@ -60,7 +60,7 @@ impl UiBoard {
         // Adjust field size depending on puzzle size
         let field_size = 12 / params.size;
 
-        for id in self.inner.indices2ids().iter() {
+        for id in self.inner.fields().iter() {
             let div = create_div(*id, params.size, field_size, &params.bg_url);
             board.append_child(&div).unwrap();
         }
@@ -177,9 +177,9 @@ fn is_empty_field(clicked_id: usize, size: usize) -> bool {
 
 fn is_swappable_with_empty(clicked_id: usize, size: usize) -> Option<usize> {
     BOARD.with_borrow(|b| {
-        let empty_id = b.board().ids2indices().len() - 1;
-        let clicked_idx = b.board().ids2indices()[clicked_id];
-        let empty_idx = b.board().ids2indices()[empty_id];
+        let empty_id = b.board().id2idx().len() - 1;
+        let clicked_idx = b.board().id2idx()[clicked_id];
+        let empty_idx = b.board().id2idx()[empty_id];
 
         if is_swappable_neighbour(clicked_idx, empty_idx, size) {
             Some(empty_id)

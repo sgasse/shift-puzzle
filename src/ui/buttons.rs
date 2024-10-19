@@ -61,7 +61,7 @@ fn get_quick_swap_callback(size: usize) -> Closure<dyn FnMut(MouseEvent)> {
         }
 
         let empty_field_idx =
-            BOARD.with_borrow(|b| get_empty_field_idx(b.board().indices2ids()).unwrap());
+            BOARD.with_borrow(|b| get_empty_field_idx(b.board().fields()).unwrap());
 
         match get_shuffle_sequence(size, empty_field_idx, 20) {
             Ok(shuffle_sequence) => {
@@ -90,7 +90,7 @@ fn get_granular_swap_callback(size: usize) -> Closure<dyn FnMut(MouseEvent)> {
 
         let num_shuffles = NUM_SHUFFLES;
         let empty_field_idx =
-            BOARD.with_borrow(|b| get_empty_field_idx(b.board().indices2ids()).unwrap());
+            BOARD.with_borrow(|b| get_empty_field_idx(b.board().fields()).unwrap());
 
         match get_shuffle_sequence(size, empty_field_idx, num_shuffles) {
             Ok(shuffle_sequence) => {
@@ -146,7 +146,7 @@ fn get_optimal_solve_callback(size: usize) -> Closure<dyn FnMut(MouseEvent)> {
         }
 
         // TODO: Solver aborting after a certain size?
-        let ids = BOARD.with_borrow(|b| b.board().indices2ids().clone());
+        let ids = BOARD.with_borrow(|b| b.board().fields().clone());
         match find_swap_order(&ids, size, size) {
             Ok(solve_sequence) => {
                 apply_solve_sequence(solve_sequence, SWAP_TIMEOUT_SLOW);
@@ -165,7 +165,7 @@ fn get_dac_solve_callback(size: usize) -> Closure<dyn FnMut(MouseEvent)> {
             return;
         }
 
-        let ids = BOARD.with_borrow(|b| b.board().indices2ids().clone());
+        let ids = BOARD.with_borrow(|b| b.board().fields().clone());
         match DacPuzzleSolver::new(&ids, size as i32, size as i32) {
             Ok(mut solver) => match solver.solve_puzzle() {
                 Ok(solve_sequence) => {
